@@ -19,5 +19,6 @@ jobs:
         script: |
           cd ./ps8-25-hexatron
           git pull origin main
+          cd ./services
           docker-compose down
           docker-compose up -d
