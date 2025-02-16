@@ -41,7 +41,7 @@ function checkAuthentication(req, res, access, next) {
 const server = http.createServer(function (request, response) {
     // First, let's check the URL to see if it's a REST request or a file request.
     // We will remove all cases of "../" in the url for security purposes.
-    response.setHeader("Access-Control-Allow-Origin", ["http://hexatron.pns.academy/", "localhost:8000", "localhost:80"]);
+    response.setHeader("Access-Control-Allow-Origin", "*");
     response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
     response.setHeader("Access-Control-Allow-Headers", "X-Requested-With,content-type");
     response.setHeader("Access-Control-Allow-Credentials", true);
@@ -80,7 +80,7 @@ const server = http.createServer(function (request, response) {
 
 const ioServer = new Server(server, {
     cors: {
-        origin: process.env.GAME_SERVICE_URL,
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
