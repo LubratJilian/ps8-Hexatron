@@ -20,7 +20,7 @@ const server = http.createServer(function (request, response) {
 
 const io = new Server(server, {
     cors: {
-        origin: [process.env.GATEWAY_URL],
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
