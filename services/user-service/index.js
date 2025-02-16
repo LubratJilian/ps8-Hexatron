@@ -5,6 +5,7 @@ const http = require("http");
 
 const uri = process.env.URI;
 const client = new MongoClient(uri);
+console.log("Connected to the Database");
 const dbName = "database";
 const db = client.db(dbName);
 const userCollection = "users";
@@ -22,11 +23,6 @@ function getIDInRequest(request) {
 
 http.createServer(function (request, response) {
     if (request.method === "OPTIONS") {
-        response.writeHead(204, {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": ["Content-Type", "Authorization"]
-        });
         response.end();
         return;
     }

@@ -4,6 +4,7 @@ const httpProxy = require('http-proxy');
 const {Server} = require('socket.io');
 const jwt = require("jsonwebtoken");
 const {io: Client} = require('socket.io-client');
+const {addCors} = require("./cors");
 
 // We will need a proxy to send requests to the other services.
 const publicRoutes = ["login", "register"];
@@ -41,10 +42,7 @@ function checkAuthentication(req, res, access, next) {
 const server = http.createServer(function (request, response) {
     // First, let's check the URL to see if it's a REST request or a file request.
     // We will remove all cases of "../" in the url for security purposes.
-    response.setHeader("Access-Control-Allow-Origin", "*");
-    response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    response.setHeader("Access-Control-Allow-Headers", "X-Requested-With,content-type");
-    response.setHeader("Access-Control-Allow-Credentials", true);
+    addCors(response);
     let filePath = request.url.split("/").filter(function(elem) {
         return elem !== "..";
     });
@@ -52,7 +50,6 @@ const server = http.createServer(function (request, response) {
         // If the URL starts by /api, then it's a REST request (you can change that if you want).
         if (filePath[1] === "api") {
             if (filePath[2] === "user") {
-                console.log(request.url);
                 if (publicRoutes.includes(filePath[3].split("?")[0])) {
                     proxy.web(request, response, {target: process.env.USER_SERVICE_URL});
                 } else {
@@ -127,5 +124,5 @@ Object.entries(servicesNamespaces).forEach(([serviceName, service]) => {
 });
 
 server.listen(8000, () => {
-    console.log("🌐 Gateway listening on http://localhost:8000");
+    console.log(`🌐 Gateway listening on ${process.env.GATEWAY_URL}`);
 });

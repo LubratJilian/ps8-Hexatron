@@ -169,5 +169,5 @@ io.on('connection', (gatewaySocket) => {
 });
 
 server.listen(8002, () => {
-    console.log("🎮 Game Service WebSocket listening on http://localhost:8002");
+    console.log(`🎮 Game Service WebSocket listening on ${process.env.GAME_SERVICE_URL}`);
 });
