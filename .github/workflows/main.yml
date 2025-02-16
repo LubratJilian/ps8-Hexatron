@@ -21,4 +21,5 @@ jobs:
           git pull origin main
           cd ./services
           docker-compose down
-          docker-compose up -d
+          docker images --format "{{.Repository}}" | grep -v "mongo" | xargs docker rmi
+          docker-compose --env-file Variables.env up -d
