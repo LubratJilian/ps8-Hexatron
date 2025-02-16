@@ -143,7 +143,7 @@ export class UserService {
         };
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000${endpoint}`, options);
+            const response = await fetch(`http://${window.location.hostname}${endpoint}`, options);
             if (response.status === 498) {
                 await this.refreshAccessToken();
                 return this._request(method, endpoint, body, this._accessToken);
