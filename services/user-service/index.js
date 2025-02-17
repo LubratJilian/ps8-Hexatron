@@ -5,12 +5,18 @@ const http = require("http");
 
 const uri = process.env.URI;
 const client = new MongoClient(uri);
-console.log("Connected to the Database");
-const dbName = "database";
+console.log("Connected to the Database with URI ", uri);
+const dbName = process.env.DB_NAME;
 const db = client.db(dbName);
 const userCollection = "users";
 const refreshTokenCollection = "refreshTokens";
 const saltRounds = 10;
+
+try {
+    db.dropCollection("refreshTokens").then();
+} catch (error) {
+    console.error(error);
+}
 
 function getIDInRequest(request) {
     const userId = request.headers["x-user-id"];

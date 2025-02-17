@@ -24,7 +24,10 @@ services:
     networks:
       - network-services
     environment:
-      - URI=${URI_DATABASE}
+      - URI=${URI_DATABASE_ROOT}
+      - COLLECTIONS=${USER_COLLECTION},${TOKEN_COLLECTION}
+      - USERS=${MONGO_USER_SERVICE_USERNAME};${MONGO_USER_SERVICE_PASSWORD}
+      - DB_NAME=${DB_NAME}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -34,9 +37,10 @@ services:
     networks:
       - network-services
     environment:
-      - URI=${URI_DATABASE}
+      - URI=${URI_DATABASE_USER_SERVICE}
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
+      - DB_NAME=${DB_NAME}
     expose:
       - "8003"
     depends_on:
