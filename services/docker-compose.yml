@@ -46,6 +46,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+      database-initializer:
+        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8003/health" ]
       interval: 10s

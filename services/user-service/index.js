@@ -12,12 +12,6 @@ const userCollection = "users";
 const refreshTokenCollection = "refreshTokens";
 const saltRounds = 10;
 
-try {
-    db.dropCollection("refreshTokens").then();
-} catch (error) {
-    console.error(error);
-}
-
 function getIDInRequest(request) {
     const userId = request.headers["x-user-id"];
     if (userId) {
