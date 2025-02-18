@@ -22,14 +22,16 @@ const Parameters = {
 const User = {
     name: {
         bsonType: "string",
-        minLength: 3,
-        maxLength: 100
+        minLength: 4,
+        maxLength: 20
     },
     parameters: {
-        bsonType: "string"
+        bsonType: "string",
     },
     password: {
-        bsonType: "string"
+        bsonType: "string",
+        minLength: 8,
+        maxLength: 64
     },
     answers: {
         bsonType: "array",
