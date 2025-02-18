@@ -78,7 +78,7 @@ export class UserService {
     }
 
     async editUsername(newUsername) {
-        const response = await this._request("POST", "/api/user/modify", {name: newUsername});
+        const response = await this._request("PATCH", `/api/user/${this.user._id}`, {name: newUsername});
         if (response) {
             this._user.name = newUsername;
             localStorage.setItem("user", JSON.stringify(this._user));
@@ -90,7 +90,7 @@ export class UserService {
     }
 
     async editPassword(curPassword, newPassword) {
-        const response = await this._request("POST", "/api/user/modifyPassword", {
+        const response = await this._request("POST", "/api/user/updatePassword", {
             oldPassword: curPassword,
             newPassword
         });
@@ -126,7 +126,6 @@ export class UserService {
             this._accessToken = response.accessToken;
             localStorage.setItem("accessToken", this._accessToken);
         }
-        this.emit("refreshAccessToken", response);
         return response;
     }
 
@@ -148,7 +147,9 @@ export class UserService {
                 await this.refreshAccessToken();
                 return this._request(method, endpoint, body, this._accessToken);
             }
-            const data = response.ok ? await response.json() : null;
+            const data = response.ok
+                ? await response.json()
+                : await response.text();
             this.emit("apiResponse", {endpoint, success: response.ok, data});
             return data;
         } catch (error) {
