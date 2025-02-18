@@ -22,10 +22,6 @@ function getIDInRequest(request) {
 }
 
 http.createServer(function (request, response) {
-    if (request.method === "OPTIONS") {
-        response.end();
-        return;
-    }
     let apiCall = request.url.split("/").filter(function (elem) {
         return elem !== "..";
     });

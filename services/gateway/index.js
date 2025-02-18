@@ -50,7 +50,9 @@ const server = http.createServer(function (request, response) {
         // If the URL starts by /api, then it's a REST request (you can change that if you want).
         if (filePath[1] === "api") {
             if (filePath[2] === "user") {
-                if (publicRoutes.includes(filePath[3].split("?")[0])) {
+                if (request.method === "OPTIONS") {
+                    response.end();
+                } else if (publicRoutes.includes(filePath[3].split("?")[0])) {
                     proxy.web(request, response, {target: process.env.USER_SERVICE_URL});
                 } else {
                     checkAuthentication(request, response, filePath[3] !== "refreshToken", (token) => {
