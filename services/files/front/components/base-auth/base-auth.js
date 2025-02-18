@@ -1,6 +1,6 @@
 import {Component} from "../component/component.js";
 import {FormInput} from "../form-input/form-input.js";
-import {checkRequired, getInputsData} from "../../js/FormUtils.js";
+import {checkInputsValidity, getInputsData} from "../../js/FormUtils.js";
 
 export class BaseAuth extends Component {
     constructor() {
@@ -24,7 +24,7 @@ export class BaseAuth extends Component {
     }
 
     checkValidity() {
-        return checkRequired(this.shadowRoot.querySelectorAll("form-input[required]"));
+        return checkInputsValidity(this.shadowRoot.querySelectorAll("form-input"));
     }
 
     handleSubmit() {

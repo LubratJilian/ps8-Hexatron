@@ -3,7 +3,7 @@ import {FormInput} from "../form-input/form-input.js";
 import {SubmitButton} from "../submit-button/submit-button.js";
 import {ImageButton} from "../image-button/image-button.js";
 import {BaseAuth} from "../base-auth/base-auth.js";
-import {checkConfirmPassword, checkRequired, getInputsData} from "../../js/FormUtils.js";
+import {checkConfirmPassword, checkInputsValidity, getInputsData} from "../../js/FormUtils.js";
 
 export class UserProfile extends BaseAuth {
     constructor() {
@@ -108,9 +108,9 @@ export class UserProfile extends BaseAuth {
         }
     }
 
-    checkRequiredInputs(divId) {
-        const requiredInputs = this.getInputs(`#${divId} form-input[required]`);
-        return checkRequired(requiredInputs);
+    checkInputs(divId) {
+        const inputs = this.getInputs(`#${divId} form-input`);
+        return checkInputsValidity(inputs);
     }
 
     getInputs(selector) {
@@ -125,7 +125,7 @@ export class UserProfile extends BaseAuth {
             input.setAttribute("value", UserService.getInstance().user.name);
             this.editingUsername = true;
         } else {
-            if (this.checkRequiredInputs(this.SELECTORS.USERNAME_DIV)) {
+            if (this.checkInputs(this.SELECTORS.USERNAME_DIV)) {
                 this.hideElement(input);
                 this.showElement(display);
                 button.setAttribute("src", "./assets/edit.svg");
@@ -144,7 +144,7 @@ export class UserProfile extends BaseAuth {
             button.setAttribute("src", "./assets/validate.svg");
             this.editingPassword = true;
         } else {
-            if (this.checkRequiredInputs(this.SELECTORS.PASSWORD_DIV)) {
+            if (this.checkInputs(this.SELECTORS.PASSWORD_DIV)) {
                 const inputs = this.shadowRoot.querySelectorAll(`#${this.SELECTORS.PASSWORD_DIV} form-input`);
                 const inputsData = getInputsData(inputs);
                 if (checkConfirmPassword(confirmPasswordInput, inputsData["new-password-input"], inputsData["confirm-password-input"])) {
