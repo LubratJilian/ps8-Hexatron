@@ -4,14 +4,15 @@ export class FormInput extends Component {
     constructor() {
         super();
 
-        this.placeholder = "";
-        this.errorMessage = "";
         this.error = false;
-        this.required = false;
     }
 
     static get observedAttributes() {
-        return ['id', 'label', 'type', 'placeholder', 'required', 'error-message', 'error', 'max-length', 'maxlength', 'value'];
+        return [
+            'id', 'label', 'type', 'placeholder', 'required',
+            'errormessage', 'error', 'maxlength', 'minlength',
+            'value', 'pattern'
+        ];
     }
 
     async connectedCallback() {
@@ -21,93 +22,71 @@ export class FormInput extends Component {
         this.setupListeners();
     }
 
+
     attributeChangedCallback(name, oldValue, newValue) {
-        switch (name) {
-            case "id":
-                if (oldValue !== newValue)
-                    this.id = newValue;
-                break;
-            case "label":
-                this.label = newValue;
-                break;
-            case "value":
-                this.value = newValue;
-                break;
-            case "type":
-                this.type = newValue;
-                break;
-            case "placeholder":
-                this.placeholder = newValue;
-                break;
-            case "required":
-                this.required = newValue !== null && newValue !== "false";
-                break;
-            case "error-message":
-                this.errorMessage = newValue;
-                break;
-            case "error":
-                this.error = newValue === "true";
-                break;
-            case "maxlength":
-                this.maxLength = parseInt(newValue, 10) || null;
-                break;
-        }
+        const handlers = {
+            'required': () => this.required = newValue !== null && newValue !== "false",
+            'error': () => this.error = newValue === "true",
+            'maxlength': () => this.maxLength = parseInt(newValue, 10) || null,
+            'minlength': () => this.minLength = parseInt(newValue, 10) || 0,
+            'pattern': () => {
+                try {
+                    new RegExp(newValue);
+                    this.pattern = newValue;
+                } catch (e) {
+                    console.error(`Invalid pattern: ${newValue}`, e);
+                    this.pattern = '';
+                }
+            }
+        };
+
+        if (!handlers[name] && oldValue !== newValue)
+            this[name] = newValue;
+        else if (handlers[name])
+            handlers[name]();
+
         if (this.type && this.id)
             this.update();
     }
 
     update() {
-        if (!this.type || !this.id) {
+        if (!this.type || !this.id)
             return;
-        }
 
         const labelElement = this.shadowRoot.querySelector('label');
-        this.inputElement = this.shadowRoot.querySelector('input');
-        this.errorElement = this.shadowRoot.querySelector('.error-message');
-
         if (labelElement) {
             labelElement.setAttribute('for', this.id);
-            labelElement.textContent = this.label;
+            labelElement.textContent = this.label || '';
         }
 
-        if (this.inputElement) {
-            this.inputElement.setAttribute('type', this.type);
-            this.inputElement.setAttribute('id', this.id);
-            this.inputElement.setAttribute('placeholder', this.placeholder);
+        this.inputElement = this.shadowRoot.querySelector('input');
+        if (!this.inputElement)
+            return;
 
-            if (this.maxLength) {
-                this.inputElement.setAttribute('maxlength', this.maxLength);
-            } else {
-                this.inputElement.removeAttribute('maxlength');
-            }
+        const attributes = {
+            type: this.type,
+            id: this.id,
+            placeholder: this.placeholder,
+            maxlength: this.maxLength,
+            minlength: this.minLength,
+            pattern: this.pattern,
+            required: this.required ? '' : null,
+            value: this.value
+        };
 
-            if (this.required) {
-                this.inputElement.setAttribute('required', '');
-            } else {
-                this.inputElement.removeAttribute('required');
-            }
+        Object.entries(attributes).forEach(([attr, value]) => {
+            if (value !== null && value !== undefined && value !== false)
+                this.inputElement.setAttribute(attr, value);
+            else
+                this.inputElement.removeAttribute(attr);
+        });
 
-            if (this.error) {
-                this.inputElement.classList.add('error');
-            } else {
-                this.inputElement.classList.remove('error');
-            }
+        this.inputElement.classList.toggle('error', this.error);
 
-            if (this.value) {
-                this.inputElement.setAttribute('value', this.value);
-            } else {
-                this.inputElement.removeAttribute('value');
-            }
-        }
-
+        this.errorElement = this.shadowRoot.querySelector('.error-message');
         if (this.errorElement) {
-            this.errorElement.textContent = this.errorMessage;
-            if (this.error && this.errorMessage) {
-                this.errorElement.innerText = this.errorMessage;
-                this.errorElement.classList.add('visible');
-            } else {
-                this.errorElement.classList.remove('visible');
-            }
+            this.errorElement.textContent = this["errormessage"];
+            this.errorElement.classList.toggle('visible', !!this.error && !!this["errormessage"]);
         }
     }
 
@@ -144,7 +123,9 @@ export class FormInput extends Component {
     dismissError() {
         if (this.inputElement)
             this.inputElement.classList.remove("error");
-        if (this.errorMessage)
+        if (this["errormessage"]) {
             this.errorElement.classList.remove("visible");
+            this.removeAttribute("errormessage");
+        }
     }
 }
