@@ -1,6 +1,7 @@
 <h1>Register</h1>
 <form class="login-form">
-    <form-input id="username" label="Username" maxlength="20" placeholder="Enter your username" required
+    <form-input id="username" label="Username" maxlength="20" minlength="4" pattern="^[a-zA-Z0-9_\-]+$"
+                placeholder="Enter your username" required
                 type="text"></form-input>
     <form-input id="password" label="Password" placeholder="Enter your password" required type="password"></form-input>
     <form-input id="confirm-password" label="Confirm Password" placeholder="Confirm your password" required
