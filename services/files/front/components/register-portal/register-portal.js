@@ -13,12 +13,14 @@ export class RegisterPortal extends BaseAuth {
     async connectedCallback() {
         await super.connectedCallback();
 
-        this._registerHandler = () => {
-            this.dispatchEvent(new CustomEvent("changeContent", {
-                bubbles: true,
-                composed: true,
-                detail: "profile",
-            }));
+        this._registerHandler = (data) => {
+            if (data.success) {
+                this.dispatchEvent(new CustomEvent("changeContent", {
+                    bubbles: true,
+                    composed: true,
+                    detail: "profile",
+                }));
+            } else alert(data.error);
         };
 
         UserService.getInstance().on("register", this._registerHandler);

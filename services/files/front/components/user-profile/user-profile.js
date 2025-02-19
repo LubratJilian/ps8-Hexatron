@@ -41,14 +41,24 @@ export class UserProfile extends BaseAuth {
 
         this._logoutHandler = () => window.location.href = "/";
 
-        this._usernameChangedHandler = (username) => {
-            if (elements.username && username) {
-                elements.username.innerText = username;
-            }
+        this._usernameChangedHandler = (data) => {
+            if (data.success) {
+                const username = data.username;
+                if (elements.username && username) {
+                    elements.username.innerText = username;
+                }
+            } else alert(data.error);
+        };
+
+        this._passwordChangedHandler = (data) => {
+            if (data.success)
+                alert(data.message);
+            else alert(data.error);
         };
 
         UserService.getInstance().on("logout", this._logoutHandler);
         UserService.getInstance().on("editUsername", this._usernameChangedHandler);
+        UserService.getInstance().on("updatePassword", this._passwordChangedHandler);
     }
 
     disconnectedCallback() {
@@ -58,6 +68,8 @@ export class UserProfile extends BaseAuth {
             UserService.getInstance().off("editUsername", this._usernameChangedHandler);
         if (this._logoutHandler)
             UserService.getInstance().off("logout", this._logoutHandler);
+        if (this._passwordChangedHandler)
+            UserService.getInstance().off("updatePassword", this._passwordChangedHandler);
     }
 
     initializeElements() {
@@ -155,7 +167,7 @@ export class UserProfile extends BaseAuth {
                     passwordDiv.classList.replace("password-edit", "inline");
                     button.setAttribute("src", "./assets/edit.svg");
                     this.editingPassword = false;
-                    UserService.getInstance().editPassword(inputsData["current-password-input"], inputsData["confirm-password-input"]);
+                    UserService.getInstance().updatePassword(inputsData["current-password-input"], inputsData["confirm-password-input"]);
                 }
             }
         }

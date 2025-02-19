@@ -49,57 +49,93 @@ export class UserService {
         }
     }
 
+    _getErrorMessage(status, context) {
+        const messages = {
+            login: {
+                400: "Invalid login credentials.",
+                401: "Incorrect password or account does not exist.",
+                500: "Unable to log in at the moment. Please try again later."
+            },
+            register: {
+                409: "This username is already taken. Please choose a different one.",
+                500: "Unable to register at the moment. Please try again later."
+            },
+            update: {
+                409: "This username is already taken. Please choose a different one.",
+                500: "Unable to change the username at the moment. Please try again later."
+            },
+            updatePassword: {
+                401: "The current password is incorrect. Please try again.",
+                500: "Unable to update the password at the moment. Please try again later."
+            },
+            resetPassword: {
+                401: "The security answers provided are incorrect. Please try again.",
+                404: "No account found with the provided username."
+            },
+            default: {
+                400: "Invalid request.",
+                401: "Unauthorized access.",
+                403: "Forbidden action.",
+                404: "Resource not found.",
+                500: "Server error. Please try again later.",
+                503: "Unable to connect to the server. Please check your internet connection and try again."
+            }
+        };
+
+        return messages[context]?.[status] || messages.default[status] || "An unknown error has occurred.";
+    }
+
     async register(data) {
         data["parameters"] = " ";
         const response = await this._request("POST", "/api/user/register", data);
-        if (response) {
-            this._user = response.user;
-            this._accessToken = response.accessToken;
-            this._refreshToken = response.refreshToken;
+        if (response.success) {
+            const data = response.data;
+            this._user = data.user;
+            this._accessToken = data.accessToken;
+            this._refreshToken = data.refreshToken;
 
             this._saveToLocalStorage();
-        }
-        this.emit("register", response);
-        return response;
+            this.emit("register", {success: true});
+        } else this.emit("register", {success: false, error: this._getErrorMessage(response.status, "register")});
     }
 
     async login(data) {
         const response = await this._request("POST", "/api/user/login", data);
-        if (response) {
-            this._user = response.user;
-            this._accessToken = response.accessToken;
-            this._refreshToken = response.refreshToken;
+        if (response.success) {
+            const data = response.data;
+            this._user = data.user;
+            this._accessToken = data.accessToken;
+            this._refreshToken = data.refreshToken;
             this._saveToLocalStorage();
-            this.emit("login", {success: true, user: response.user});
-        } else {
-            this.emit("login", {success: false, error: "The password is incorrect"});
-        }
-        return response;
+            this.emit("login", {success: true, user: data.user});
+        } else this.emit("login", {success: false, error: this._getErrorMessage(response.status, "login")});
     }
 
     async editUsername(newUsername) {
         const response = await this._request("PATCH", `/api/user/${this.user._id}`, {name: newUsername});
-        if (response) {
-            this._user.name = newUsername;
+        if (response.success) {
+            const data = response.data;
+            this.user.name = data.user.name;
             localStorage.setItem("user", JSON.stringify(this._user));
-        }
-        const username = response.user.name;
-        this.user.name = username;
-        this.emit("editUsername", username);
-        return response;
+            this.emit("editUsername", {success: true, username: data.user.name});
+        } else this.emit("editUsername", {
+            success: false,
+            error: this._getErrorMessage(response.status, "editUsername")
+        });
     }
 
-    async editPassword(curPassword, newPassword) {
+    async updatePassword(curPassword, newPassword) {
         const response = await this._request("POST", "/api/user/updatePassword", {
             oldPassword: curPassword,
             newPassword
         });
-        if (response) {
-            this.emit("editPassword", {success: true, message: "Password successfully modified"});
-        } else {
-            this.emit("editPassword", {success: false, error: "The password is incorrect"});
-        }
-        return response;
+        if (response.success)
+            this.emit("updatePassword", {success: true, message: "Password successfully modified"});
+
+        else this.emit("updatePassword", {
+            success: false,
+            error: this._getErrorMessage(response.status, "updatePassword")
+        });
     }
 
     async logout() {
@@ -111,13 +147,16 @@ export class UserService {
         this._clearLocalStorage();
 
         this.emit("logout", response);
-        return response;
     }
 
     async resetPassword(data) {
         const response = await this._request("POST", "/api/user/resetPassword", data);
-        this.emit("resetPassword", response);
-        return response;
+        if (response.success) {
+            this.emit("resetPassword", {success: true});
+            return;
+        }
+
+        this.emit("resetPassword", {success: false, error: this._getErrorMessage(response.status, "resetPassword")});
     }
 
     async refreshAccessToken() {
@@ -143,19 +182,32 @@ export class UserService {
 
         try {
             const response = await fetch(`http://127.0.0.1:8000${endpoint}`, options);
+            const data = await response.json().catch(() => null);
             if (response.status === 498) {
                 await this.refreshAccessToken();
                 return this._request(method, endpoint, body, this._accessToken);
             }
-            const data = response.ok
-                ? await response.json()
-                : await response.text();
-            this.emit("apiResponse", {endpoint, success: response.ok, data});
-            return data;
+
+            if (!response.ok) {
+                return {
+                    success: false,
+                    status: response.status
+                };
+            }
+
+            return {success: true, data};
         } catch (error) {
-            console.error("API request error:", error);
-            this.emit("apiError", {endpoint, error});
-            return null;
+            if (error.name === "TypeError" || error.message === "Failed to fetch") {
+                return {
+                    success: false,
+                    status: 503,
+                };
+            }
+
+            return {
+                success: false,
+                status: 500
+            };
         }
     }
 
