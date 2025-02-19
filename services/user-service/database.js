@@ -1,26 +1,49 @@
-const {MongoClient, ObjectId} = require("mongodb");
+const {MongoClient} = require("mongodb");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const {convertToID, HttpError, convertToString} = require("./utils");
+const {convertToID, convertToString, DATABASE_ERRORS} = require("./utils");
 
 const userCollection = "users";
 const refreshTokenCollection = "refreshTokens";
 const dbName = "database";
-
 const uri = process.env.URI;
 const client = new MongoClient(uri);
 const db = client.db(dbName);
 
-async function getUserByID(userID) {
-    const user = await db.collection(userCollection).findOne(
-        {_id: convertToID(userID)},
-        {projection: {password: 0}}
-    );
-    if (!user) {
-        throw new HttpError(404, "User not found");
+function handleMongoError(error) {
+    switch (error.code) {
+        case 11000:
+            throw new Error(DATABASE_ERRORS.USERNAME_ALREADY_EXISTS);
+        case 121:
+            throw new Error(DATABASE_ERRORS.VALIDATION_FAILED);
+        default:
+            throw error;
     }
+}
+
+async function mongoOperation(operation) {
+    try {
+        return await operation();
+    } catch (error) {
+        handleMongoError(error);
+    }
+}
+
+async function getUserByID(userID, includePassword = false) {
+    const projection = includePassword ? {} : {password: 0};
+
+    const user = await mongoOperation(() =>
+        db.collection(userCollection).findOne(
+            {_id: convertToID(userID)},
+            {projection}
+        )
+    );
+    if (!user)
+        throw new Error(DATABASE_ERRORS.USER_NOT_FOUND);
+
     return user;
 }
+
 
 function generateToken(userID, access) {
     try {
@@ -30,85 +53,96 @@ function generateToken(userID, access) {
             {expiresIn: access ? "15m" : "7d"}
         );
     } catch (error) {
-        throw new HttpError(500, "Token generation failed");
+        throw new Error(DATABASE_ERRORS.TOKEN_GENERATION_FAILED);
     }
 }
 
 async function generateRefreshToken(userID) {
     const token = generateToken(userID, false);
-    const result = await db.collection(refreshTokenCollection).insertOne({userID, refreshToken: token});
-    if (!result.acknowledged) {
-        throw new HttpError(500, "Error adding token to database");
-    }
+    const result = await mongoOperation(() =>
+        db.collection(refreshTokenCollection).insertOne({userID, refreshToken: token})
+    );
+    if (!result.acknowledged)
+        throw new Error(DATABASE_ERRORS.TOKEN_INSERT_FAILED);
     return token;
 }
 
 async function deleteToken(userID) {
-    const result = await db.collection(refreshTokenCollection).deleteOne({userID});
-    if (result.deletedCount === 0) {
-        throw new HttpError(404, "Token not found");
-    }
+    const result = await mongoOperation(() =>
+        db.collection(refreshTokenCollection).deleteOne({userID})
+    );
+    if (result.deletedCount === 0)
+        throw new Error(DATABASE_ERRORS.TOKEN_NOT_FOUND);
     return true;
 }
 
 async function addUser(newUser) {
-    const result = await db.collection(userCollection).insertOne(newUser);
+    const result = await mongoOperation(() =>
+        db.collection(userCollection).insertOne(newUser)
+    );
     return getUserByID(convertToString(result.insertedId));
 }
 
 async function getUserID(userName) {
-    const user = await db.collection(userCollection).findOne({name: userName}, {projection: {_id: 1}});
-    if (!user) {
-        throw new HttpError(404, "User not found");
-    }
+    const user = await mongoOperation(() =>
+        db.collection(userCollection).findOne({name: userName}, {projection: {_id: 1}})
+    );
+    if (!user)
+        throw new Error(DATABASE_ERRORS.USER_NOT_FOUND);
     return convertToString(user._id);
 }
 
 async function deleteUserByID(userID) {
-    const result = await db.collection(userCollection).deleteOne({_id: convertToID(userID)});
-    if (result.deletedCount === 0) {
-        throw new HttpError(404, "User not found");
-    }
+    const result = await mongoOperation(() =>
+        db.collection(userCollection).deleteOne({_id: convertToID(userID)})
+    );
+    if (result.deletedCount === 0)
+        throw new Error(DATABASE_ERRORS.USER_NOT_FOUND);
     return true;
 }
 
-async function checkPassword(credential, password, withID) {
-    const user = withID ? await getUserByID(credential) : await db.collection(userCollection).findOne({name: credential});
-    if (!user) {
-        throw new HttpError(404, "User not found");
-    }
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-        throw new HttpError(401, "Invalid password");
-    }
-    const {passwordUser, answersUser, ...res} = user;
+async function checkPassword(credential, enteredPwd, withID) {
+    const user = withID
+        ? await getUserByID(credential, true)
+        : await mongoOperation(() => db.collection(userCollection).findOne({name: credential}));
+    if (!user)
+        throw new Error(DATABASE_ERRORS.USER_NOT_FOUND);
+
+    const match = await bcrypt.compare(enteredPwd, user.password);
+    if (!match)
+        throw new Error(DATABASE_ERRORS.INVALID_PASSWORD);
+
+    const {password, answers, ...res} = user;
     return res;
 }
 
 async function updateUser(newUserData, userID) {
-    const modification = await db.collection(userCollection).updateOne(
-        {_id: convertToID(userID)},
-        {$set: newUserData}
+    const modification = await mongoOperation(() =>
+        db.collection(userCollection).updateOne(
+            {_id: convertToID(userID)},
+            {$set: newUserData}
+        )
     );
-    if (modification.modifiedCount === 0) {
-        throw new HttpError(400, "User update failed");
-    }
+    if (modification.modifiedCount === 0)
+        throw new Error(DATABASE_ERRORS.USER_UPDATE_FAILED);
     return true;
 }
 
 async function refreshAccessToken(userID) {
-    const refreshTokenPresent = await db.collection(refreshTokenCollection).findOne({userID});
-    if (!refreshTokenPresent) {
-        throw new HttpError(403, "No refresh token found");
-    }
+    const refreshTokenPresent = await mongoOperation(() =>
+        db.collection(refreshTokenCollection).findOne({userID})
+    );
+    if (!refreshTokenPresent)
+        throw new Error(DATABASE_ERRORS.TOKEN_NOT_FOUND);
     return generateToken(userID, true);
 }
 
-async function resetPassword(userID, answers, newPassword) {
+async function resetPassword(username, answers, newPassword) {
+    const userID = await getUserID(username);
     const user = await getUserByID(userID);
-    if (!user.answers.every((el, i) => answers[i] === el)) {
-        throw new HttpError(403, "Security answers do not match");
-    }
+    if (!user.answers.every((el, i) => answers[i] === el))
+        throw new Error(DATABASE_ERRORS.SECURITY_ANSWERS_MISMATCH);
+
     await updateUser({password: newPassword}, userID);
     return true;
 }
@@ -121,5 +155,5 @@ module.exports = {
     checkPassword,
     updateUser,
     resetPassword,
-    refreshAccessToken
+    refreshAccessToken,
 };
