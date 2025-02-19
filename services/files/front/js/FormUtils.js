@@ -67,7 +67,6 @@ function checkPatternInputs(inputs) {
         const pattern = input.getAttribute("pattern");
         const regex = new RegExp(pattern);
         const hasError = value && !regex.test(value);
-        console.log(regex.test(value));
 
         const errorMessage = hasError ? getPatternErrorMessage(pattern) : null;
         updateErrorMessage(input, hasError, errorMessage);
