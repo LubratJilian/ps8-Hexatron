@@ -187,7 +187,6 @@ exports.disconnect = async (req, res) => {
             throw error;
         if (error.message === DATABASE_ERRORS.TOKEN_NOT_FOUND)
             throw new HttpError(404, "User was not logged in or already logged out");
-        //TODO add the error message at the end
         throw new HttpError(500, "Internal server error during logout");
     }
 };
