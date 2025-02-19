@@ -9,7 +9,7 @@ function parseRequestPath(req) {
 }
 
 function handleError(res, error) {
-    const statusCode = error.statusCode || 500;
+    const statusCode = error.status || 500;
     const message = statusCode === 500 ? "Internal Server Error" : error.message;
     res.writeHead(statusCode, {"Content-Type": "application/json"});
     res.end(JSON.stringify({error: message}));
