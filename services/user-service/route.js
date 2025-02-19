@@ -1,12 +1,6 @@
 const {createServer} = require("node:http");
 const controller = require("./controller");
-
-function parseRequestPath(req) {
-    const baseUrl = `http://${req.headers.host}`;
-    const url = new URL(req.url, baseUrl);
-
-    return url.pathname.split("/").filter(Boolean).slice(2);
-}
+const {parseRequestPath} = require("./utils");
 
 function handleError(res, error) {
     const statusCode = error.status || 500;
