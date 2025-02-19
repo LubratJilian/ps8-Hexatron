@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const {io: Client} = require('socket.io-client');
 
 // We will need a proxy to send requests to the other services.
-const publicRoutes = ["login", "register"];
+const publicRoutes = ["login", "register", "resetPassword"];
 const jwtAccessSecretKey = process.env.ACCESS_TOKEN_SECRET;
 const jwtRefreshSecretKey = process.env.REFRESH_TOKEN_SECRET;
 const proxy = httpProxy.createProxyServer();
@@ -52,7 +52,6 @@ const server = http.createServer(function (request, response) {
             response.setHeader("Access-Control-Allow-Headers", "X-Requested-With,content-type");
             response.setHeader("Access-Control-Allow-Credentials", true);
             if (filePath[2] === "user") {
-                console.log(request.url);
                 if (publicRoutes.includes(filePath[3].split("?")[0])) {
                     proxy.web(request, response, {target: process.env.USER_SERVICE_URL});
                 } else {
