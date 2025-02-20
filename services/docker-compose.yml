@@ -44,8 +44,6 @@ services:
     expose:
       - "8003"
     depends_on:
-      mongodb:
-        condition: service_healthy
       database-initializer:
         condition: service_completed_successfully
     healthcheck:
@@ -103,12 +101,26 @@ services:
       - GATEWAY_URL=${GATEWAY_URL}
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
+      - DOC_API_SERVICE_URL=${DOC_API_SERVICE_URL}
     depends_on:
-      mongodb:
-        condition: service_healthy
-      files:
-        condition: service_healthy
       game-service:
+        condition: service_healthy
+      doc-api:
+        condition: service_completed_successfully
+
+  doc-api:
+    build:
+      ./documentation-api/
+    networks:
+      - network-services
+    expose:
+      - "8004"
+    environment:
+      - SERVICES_URL=${USER_SERVICE_URL}
+      - DOC_API_SERVICE_URL=${DOC_API_SERVICE_URL}
+      - FILES_URL=${FILES_URL}
+    depends_on:
+      files:
         condition: service_healthy
       user-service:
         condition: service_healthy
