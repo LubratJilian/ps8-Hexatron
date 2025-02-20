@@ -12,27 +12,42 @@ export class BaseAuth extends Component {
     async connectedCallback() {
         await super.connectedCallback();
 
-        const submitButton = this.shadowRoot.querySelector('submit-button');
-        if (submitButton) {
-            submitButton.addEventListener('click', () => {
-                if (!this.checkValidity())
-                    return;
+        this.setupListeners();
+    }
 
-                this.handleSubmit();
-            });
-        }
+    setupListeners() {
+        const submitButton = this.shadowRoot.querySelector('submit-button');
+
+        Array.from(this.getFormInputs())
+            .forEach(input => this.addAutoCleanListener(input, "keydown", (event) => {
+                if (event.key === 'Enter')
+                    this.submit();
+            }));
+
+        if (submitButton)
+            this.addAutoCleanListener(submitButton, 'click', () => this.submit());
+    }
+
+    submit() {
+        if (!this.checkValidity())
+            return;
+
+        this.handleSubmit();
     }
 
     checkValidity() {
-        return checkInputsValidity(this.shadowRoot.querySelectorAll("form-input"));
+        return checkInputsValidity(this.getFormInputs());
     }
 
     handleSubmit() {
         console.warn("handleSubmit must be implemented by the child class.");
     }
 
+    getFormInputs() {
+        return this.shadowRoot.querySelectorAll("form-input");
+    }
+
     getFormData() {
-        const formInputs = this.shadowRoot.querySelectorAll("form-input");
-        return getInputsData(formInputs);
+        return getInputsData(this.getFormInputs());
     }
 }

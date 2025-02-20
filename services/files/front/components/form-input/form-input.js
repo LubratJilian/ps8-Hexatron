@@ -91,11 +91,6 @@ export class FormInput extends Component {
     }
 
     setupListeners() {
-        this.setupInputListener();
-        this.setupSubmitListener();
-    }
-
-    setupInputListener() {
         const charCounter = this.shadowRoot.querySelector('.char-counter');
 
         this.addAutoCleanListener(this.shadowRoot.querySelector('input'), "input", (e) => {
@@ -106,16 +101,6 @@ export class FormInput extends Component {
                 charCounter.textContent = `${remainingChars} character${(remainingChars > 1) ? "s" : ""} remaining`;
             } else {
                 charCounter.textContent = ``;
-            }
-        });
-    }
-
-    setupSubmitListener() {
-        this.addAutoCleanListener(this.inputElement, "keydown", (event) => {
-            if (event.key === 'Enter') {
-                console.log("Enter key pressed. Requesting form submission...");
-
-                this.closest('form')?.dispatchEvent(new Event('submit'));
             }
         });
     }
