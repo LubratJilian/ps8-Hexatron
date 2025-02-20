@@ -48,7 +48,6 @@ export class UserService {
         this._user = JSON.parse(localStorage.getItem("user")) || null;
         this._accessToken = localStorage.getItem("accessToken") || null;
         this._refreshToken = localStorage.getItem("refreshToken") || null;
-        this._listeners = {};
 
         UserService._instance = this;
     }
@@ -68,62 +67,8 @@ export class UserService {
         return this.user !== null;
     }
 
-    on(eventName, callback) {
-        if (!this._listeners[eventName]) {
-            this._listeners[eventName] = [];
-        }
-        this._listeners[eventName].push(callback);
-    }
-
-    off(eventName, callback) {
-        if (this._listeners[eventName]) {
-            this._listeners[eventName] = this._listeners[eventName].filter(cb => cb !== callback);
-            if (this._listeners[eventName].length === 0) {
-                delete this._listeners[eventName];
-            }
-        }
-    }
-
-    emit(eventName, data) {
-        if (this._listeners[eventName]) {
-            this._listeners[eventName].forEach(callback => callback(data));
-        }
-    }
-
-    _getErrorMessage(status, context) {
-        const messages = {
-            login: {
-                400: "Invalid login credentials.",
-                401: "Incorrect password or account does not exist.",
-                500: "Unable to log in at the moment. Please try again later."
-            },
-            register: {
-                409: "This username is already taken. Please choose a different one.",
-                500: "Unable to register at the moment. Please try again later."
-            },
-            update: {
-                409: "This username is already taken. Please choose a different one.",
-                500: "Unable to change the username at the moment. Please try again later."
-            },
-            updatePassword: {
-                401: "The current password is incorrect. Please try again.",
-                500: "Unable to update the password at the moment. Please try again later."
-            },
-            resetPassword: {
-                401: "The security answers provided are incorrect. Please try again.",
-                404: "No account found with the provided username."
-            },
-            default: {
-                400: "Invalid request.",
-                401: "Unauthorized access.",
-                403: "Forbidden action.",
-                404: "Resource not found.",
-                500: "Server error. Please try again later.",
-                503: "Unable to connect to the server. Please check your internet connection and try again."
-            }
-        };
-
-        return messages[context]?.[status] || messages.default[status] || "An unknown error has occurred.";
+    _getErrorMessage(status, action) {
+        return UserService.ERROR_MESSAGES[action]?.[status] || UserService.ERROR_MESSAGES.default[status] || "An unknown error has occurred.";
     }
 
     async register(data) {
@@ -136,8 +81,9 @@ export class UserService {
             this._refreshToken = data.refreshToken;
 
             this._saveToLocalStorage();
-            this.emit("register", {success: true});
-        } else this.emit("register", {success: false, error: this._getErrorMessage(response.status, "register")});
+            return {success: true, user: data.user};
+        }
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.REGISTER)};
     }
 
     async login(data) {
@@ -148,21 +94,23 @@ export class UserService {
             this._accessToken = data.accessToken;
             this._refreshToken = data.refreshToken;
             this._saveToLocalStorage();
-            this.emit("login", {success: true, user: data.user});
-        } else this.emit("login", {success: false, error: this._getErrorMessage(response.status, "login")});
+            return {success: true, user: data.user};
+        }
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.LOGIN)};
     }
 
-    async editUsername(newUsername) {
+    async updateUsername(newUsername) {
         const response = await this._request("PATCH", `/api/user/${this.user._id}`, {name: newUsername});
         if (response.success) {
             const data = response.data;
             this.user.name = data.user.name;
             localStorage.setItem("user", JSON.stringify(this._user));
-            this.emit("editUsername", {success: true, username: data.user.name});
-        } else this.emit("editUsername", {
+            return {success: true, username: data.user.name};
+        }
+        return {
             success: false,
-            error: this._getErrorMessage(response.status, "editUsername")
-        });
+            error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)
+        };
     }
 
     async updatePassword(curPassword, newPassword) {
@@ -171,33 +119,29 @@ export class UserService {
             newPassword
         });
         if (response.success)
-            this.emit("updatePassword", {success: true, message: "Password successfully modified"});
+            return {success: true, message: "Password successfully modified"};
 
-        else this.emit("updatePassword", {
+        return {
             success: false,
-            error: this._getErrorMessage(response.status, "updatePassword")
-        });
+            error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_PASSWORD)
+        };
     }
 
     async logout() {
-        const response = await this._request("POST", "/api/user/disconnect");
+        await this._request("POST", "/api/user/disconnect");
         this._user = null;
         this._accessToken = null;
         this._refreshToken = null;
 
         this._clearLocalStorage();
-
-        this.emit("logout", response);
     }
 
     async resetPassword(data) {
         const response = await this._request("POST", "/api/user/resetPassword", data);
-        if (response.success) {
-            this.emit("resetPassword", {success: true});
-            return;
-        }
+        if (response.success)
+            return {success: true, message: "Password successfully reset."};
 
-        this.emit("resetPassword", {success: false, error: this._getErrorMessage(response.status, "resetPassword")});
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.RESET_PASSWORD)};
     }
 
     async refreshAccessToken() {
@@ -211,9 +155,8 @@ export class UserService {
 
     async _request(method, endpoint, body = null, token = this._accessToken) {
         const headers = {"Content-Type": "application/json"};
-        if (token) {
+        if (token)
             headers["Authorization"] = `Bearer ${token}`;
-        }
 
         const options = {
             method,
@@ -229,26 +172,15 @@ export class UserService {
                 return this._request(method, endpoint, body, this._accessToken);
             }
 
-            if (!response.ok) {
-                return {
-                    success: false,
-                    status: response.status
-                };
-            }
+            if (!response.ok)
+                return {success: false, status: response.status};
 
             return {success: true, data};
         } catch (error) {
-            if (error.name === "TypeError" || error.message === "Failed to fetch") {
-                return {
-                    success: false,
-                    status: 503,
-                };
-            }
+            if (error.name === "TypeError" || error.message === "Failed to fetch")
+                return {success: false, status: 503};
 
-            return {
-                success: false,
-                status: 500
-            };
+            return {success: false, status: 500};
         }
     }
 
