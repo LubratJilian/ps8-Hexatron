@@ -44,7 +44,6 @@ async function getUserByID(userID, includePassword = false) {
     return user;
 }
 
-
 function generateToken(userID, access) {
     try {
         return jwt.sign(
@@ -123,8 +122,10 @@ async function updateUser(newUserData, userID) {
             {$set: newUserData}
         )
     );
-    if (modification.modifiedCount === 0)
-        throw new Error(DATABASE_ERRORS.USER_UPDATE_FAILED);
+
+    if (modification.matchedCount === 0)
+        throw new Error(DATABASE_ERRORS.USER_NOT_FOUND);
+
     return true;
 }
 
