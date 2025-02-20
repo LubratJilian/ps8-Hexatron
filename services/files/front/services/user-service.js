@@ -1,5 +1,46 @@
+export const USER_ACTIONS = Object.freeze({
+    LOGIN: "login",
+    REGISTER: "register",
+    UPDATE_USERNAME: "editUsername",
+    UPDATE_PASSWORD: "updatePassword",
+    RESET_PASSWORD: "resetPassword",
+    LOGOUT: "logout",
+});
+
 export class UserService {
     static _instance = null;
+    static ERROR_MESSAGES = {
+        [USER_ACTIONS.LOGIN]: {
+            400: "Invalid login credentials.",
+            401: "Incorrect password or account does not exist.",
+            500: "Unable to log in at the moment. Please try again later."
+        },
+        [USER_ACTIONS.REGISTER]: {
+            409: "This username is already taken. Please choose a different one.",
+            500: "Unable to register at the moment. Please try again later."
+        },
+        [USER_ACTIONS.UPDATE_USERNAME]: {
+            409: "This username is already taken. Please choose a different one.",
+            500: "Unable to change the username at the moment. Please try again later."
+        },
+        [USER_ACTIONS.UPDATE_PASSWORD]: {
+            401: "The current password is incorrect. Please try again.",
+            500: "Unable to update the password at the moment. Please try again later."
+        },
+        [USER_ACTIONS.RESET_PASSWORD]: {
+            401: "The security answers provided are incorrect. Please try again.",
+            404: "No account found with the provided username."
+        },
+        default: {
+            400: "Invalid request.",
+            401: "Unauthorized access.",
+            403: "Forbidden action.",
+            404: "Resource not found.",
+            500: "Server error. Please try again later.",
+            503: "Unable to connect to the server. Please check your internet connection and try again."
+        }
+    };
+
 
     constructor() {
         if (UserService._instance) return UserService._instance;
