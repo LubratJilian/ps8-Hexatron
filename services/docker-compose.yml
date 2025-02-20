@@ -33,7 +33,9 @@ services:
         condition: service_healthy
 
   user-service:
-    build: ./user-service/
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
     networks:
       - network-services
     environment:
@@ -41,6 +43,7 @@ services:
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
       - DB_NAME=${DB_NAME}
+      - UTILS_API=${UTILS_API}
     expose:
       - "8003"
     depends_on:

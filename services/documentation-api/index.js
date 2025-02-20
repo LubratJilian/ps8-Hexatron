@@ -1,91 +1,99 @@
 const http = require("http");
 
-function fetchApiDoc(url) {
+let mergedDocOptions = {
+    openapi: "3.0.0",
+    info: {
+        title: "API Documentation",
+        version: "1.0.0"
+    },
+    paths: {},
+    components: {},
+    basePath: "/api"
+};
+
+async function fetchApiDoc(url) {
     return new Promise((resolve, reject) => {
-        http.get(url, (res) => {
+        let request = http.get(url, {timeout: 1000}, (response) => {
             let data = "";
-            res.on("data", (chunk) => {
+            response.on("data", (chunk) => {
                 data += chunk;
             });
 
-            res.on("end", () => {
+            response.on("end", () => {
                 try {
                     resolve(JSON.parse(data));
                 } catch (e) {
                     reject(e);
                 }
             });
-        }).on("error", reject);
+        });
+
+        request.on("timeout", () => {
+            request.destroy();
+            console.error(`Timeout exceeded, documentation of ${url} not fetch`);
+            resolve({});
+        });
+
+        request.on("error", reject);
     });
 }
 
 async function mergeDocs(serviceUrls) {
-    let mergedDoc = {
-        openapi: "3.0.0",
-        info: {
-            title: "API Documentation",
-            version: "1.0.0"
-        },
-        paths: {},
-        components: {},
-        basePath: ""
-    };
-
     for (let url of serviceUrls) {
         try {
             let doc = await fetchApiDoc(url + "/doc");
-            Object.assign(mergedDoc.paths, doc.paths);
-
+            if (Object.keys(doc).length !== 0)
+                Object.assign(mergedDocOptions.paths, doc.paths);
             if (doc.components) {
                 for (let [key, value] of Object.entries(doc.components)) {
-                    mergedDoc.components[key] = {
-                        ...mergedDoc.components[key],
+                    mergedDocOptions.components[key] = {
+                        ...mergedDocOptions.components[key],
                         ...value
                     };
                 }
             }
-
         } catch (error) {
             console.error(`Erreur lors de la récupération de ${url}`, error);
         }
     }
-
-    return mergedDoc;
 }
 
 async function sendDoc() {
-    const doc = await mergeDocs(process.env.SERVICES_URL.split(","));
+    await mergeDocs(process.env.SERVICES_URL.split(","));
 
-    const dataToSend = JSON.stringify({path: "./front/swagger-ui-dist/doc.json", file: doc});
-
+    let documentation = JSON.stringify(mergedDocOptions);
     const options = {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Content-Length": Buffer.byteLength(dataToSend)
+            "Content-Length": Buffer.byteLength(documentation)
         }
     };
-    console.log(process.env.FILES_URL);
-    const req = http.request(process.env.FILES_URL, options, (res) => {
+
+    const req = http.request(process.env.FILES_URL, options, (response) => {
         let responseData = "";
 
-        res.on("data", (chunk) => {
+        response.on("data", (chunk) => {
             responseData += chunk;
         });
 
-        res.on("end", () => {
-            console.log("Réponse reçue:", responseData);
+        response.on("end", () => {
+            if (response.statusCode === 201) {
+                console.log("File received by files service");
+            } else {
+                console.error(`Error: HTTP status Code ${response.statusCode}`);
+            }
             process.exit(0);
         });
     });
 
     req.on("error", (err) => {
-        console.error("Erreur lors de la requête:", err);
+        console.error("Error during transmission: ", err);
+        process.exit(0);
     });
 
-    req.write(dataToSend);
+    req.write(documentation);
     req.end();
-    console.log("send");
 }
 
 sendDoc().then();

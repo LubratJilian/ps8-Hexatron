@@ -3,37 +3,30 @@ const fs = require("fs");
 const fileQuery = require('./logic.js');
 
 http.createServer(function (request, response) {
-  console.log(request.url, request.method);
   if (request.url.split("/")[1] === "health") {
     response.writeHead(204);
     response.end();
   } else if (request.method === "POST") {
-    let body = "";
+    let file = "";
 
     request.on("data", chunk => {
-      body += chunk.toString();
+      file += chunk.toString();
     });
 
     request.on("end", () => {
-      try {
-        const data = JSON.parse(body);
-        console.log(`Received a file: ${data}`, data.path, data.file);
-        fs.writeFile(data.path, JSON.stringify(data.file), (err) => {
-          if (err) {
-            console.error(`Error creating the file: ${data}`, err);
+      console.log(`File received: ${file}`);
+      fs.writeFile("./front/swagger-ui-dist/doc.json", file, (error) => {
+        if (error) {
+          console.error(`Error creating the file: ${file}`, error);
+          response.writeHead(400, {"Content-Type": "application/json"});
+          response.end(JSON.stringify({error: "Error during file reception"}));
           } else {
             console.log("File created successfully!");
+          response.writeHead(201, {"Content-Type": "application/json"});
+          response.end(JSON.stringify({message: "File received"}));
           }
         });
-        response.writeHead(200, {"Content-Type": "application/json"});
-        response.end(JSON.stringify({message: "File received", received: data}));
-      } catch (error) {
-        console.log("error", error);
-        response.writeHead(400, {"Content-Type": "application/json"});
-        response.end(JSON.stringify({error: "Error during file reception"}));
-      }
     });
-
   } else {
     console.log(`Received query for a file: ${request.url}`);
     fileQuery.manage(request, response);
