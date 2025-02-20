@@ -10,20 +10,14 @@ export class RegisterPortal extends BaseAuth {
         SubmitButton.register();
     }
 
-    async connectedCallback() {
-        await super.connectedCallback();
-
-        this._registerHandler = (data) => {
-            if (data.success) {
-                this.dispatchEvent(new CustomEvent("changeContent", {
-                    bubbles: true,
-                    composed: true,
-                    detail: "profile",
-                }));
-            } else alert(data.error);
-        };
-
-        UserService.getInstance().on("register", this._registerHandler);
+    _registerHandler(data) {
+        if (data.success) {
+            this.dispatchEvent(new CustomEvent("changeContent", {
+                bubbles: true,
+                composed: true,
+                detail: "profile",
+            }));
+        } else alert(data.error);
     }
 
     checkValidity() {
@@ -47,13 +41,7 @@ export class RegisterPortal extends BaseAuth {
             data["security-question3"]
         ];
 
-        UserService.getInstance().register({name, password, answers});
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-
-        if (this._registerHandler)
-            UserService.getInstance().off("register", this._registerHandler);
+        UserService.getInstance().register({name, password, answers})
+            .then((data) => this._registerHandler(data));
     }
 }
