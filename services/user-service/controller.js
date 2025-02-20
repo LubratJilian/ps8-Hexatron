@@ -96,8 +96,8 @@ exports.update = async (req, res) => {
 
         if (error.message === DATABASE_ERRORS.USERNAME_ALREADY_EXISTS)
             throw new HttpError(409, "Username already exists");
-        if (error.message === DATABASE_ERRORS.USER_UPDATE_FAILED)
-            throw new HttpError(404, "User not found or no changes made");
+        if (error.message === DATABASE_ERRORS.USER_NOT_FOUND)
+            throw new HttpError(404, "User not found");
         if (error.message === DATABASE_ERRORS.VALIDATION_FAILED)
             throw new HttpError(400, "Invalid data format");
 
