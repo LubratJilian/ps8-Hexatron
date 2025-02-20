@@ -1,6 +1,7 @@
 import {SubmitButton} from "../submit-button/submit-button.js";
 import {UserService} from "../../services/user-service.js";
 import {BaseAuth} from "../base-auth/base-auth.js";
+import {DRAWER_CONTENT} from "../drawer-menu/drawer-menu.js";
 
 export class LoginPortal extends BaseAuth {
     constructor() {
@@ -23,7 +24,7 @@ export class LoginPortal extends BaseAuth {
             this.dispatchEvent(new CustomEvent("changeContent", {
                 bubbles: true,
                 composed: true,
-                detail: "profile",
+                detail: DRAWER_CONTENT.PROFILE,
             }));
         } else alert(data.error);
     }

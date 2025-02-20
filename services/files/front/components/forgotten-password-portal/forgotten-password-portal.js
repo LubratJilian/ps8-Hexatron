@@ -1,5 +1,6 @@
 import {BaseAuth} from "../base-auth/base-auth.js";
 import {UserService} from "../../services/user-service.js";
+import {DRAWER_CONTENT} from "../drawer-menu/drawer-menu.js";
 
 export class ForgottenPasswordPortal extends BaseAuth {
     _resetPasswordHandler(data) {
@@ -8,7 +9,7 @@ export class ForgottenPasswordPortal extends BaseAuth {
             this.dispatchEvent(new CustomEvent("changeContent", {
                 bubbles: true,
                 composed: true,
-                detail: "profile",
+                detail: DRAWER_CONTENT.PROFILE,
             }));
         } else alert(data.error);
     }

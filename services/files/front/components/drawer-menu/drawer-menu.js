@@ -5,6 +5,12 @@ import {UserProfile} from "../user-profile/user-profile.js";
 import {RegisterPortal} from "../register-portal/register-portal.js";
 import {ForgottenPasswordPortal} from "../forgotten-password-portal/forgotten-password-portal.js";
 
+export const DRAWER_CONTENT = Object.freeze({
+    PROFILE: "profile",
+    REGISTER: "register",
+    FORGOT_PASSWORD: "forgottenPassword"
+});
+
 export class DrawerMenu extends Component {
     constructor() {
         super();
@@ -39,13 +45,13 @@ export class DrawerMenu extends Component {
         let component;
 
         switch (type) {
-            case "profile":
+            case DRAWER_CONTENT.PROFILE:
                 component = (UserService.getInstance().isConnected()) ? "<user-profile></user-profile>" : "<login-portal></login-portal>";
                 break;
-            case "register":
+            case DRAWER_CONTENT.REGISTER:
                 component = "<register-portal></register-portal>";
                 break;
-            case "forgottenPassword":
+            case DRAWER_CONTENT.FORGOT_PASSWORD:
                 component = "<forgotten-password-portal></forgotten-password-portal>";
                 break;
             default:
