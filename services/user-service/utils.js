@@ -1,6 +1,6 @@
 const {ObjectId} = require("mongodb");
 
-const DATABASE_ERRORS = {
+const DATABASE_ERRORS = Object.freeze({
     USER_NOT_FOUND: "USER_NOT_FOUND",
     TOKEN_GENERATION_FAILED: "TOKEN_GENERATION_FAILED",
     TOKEN_NOT_FOUND: "TOKEN_NOT_FOUND",
@@ -10,7 +10,7 @@ const DATABASE_ERRORS = {
     SECURITY_ANSWERS_MISMATCH: "SECURITY_ANSWERS_MISMATCH",
     USERNAME_ALREADY_EXISTS: "USERNAME_ALREADY_EXISTS",
     VALIDATION_FAILED: "VALIDATION_FAILED"
-};
+});
 
 class HttpError extends Error {
     constructor(status, message) {
