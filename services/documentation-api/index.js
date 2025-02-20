@@ -53,7 +53,7 @@ async function mergeDocs(serviceUrls) {
                 }
             }
         } catch (error) {
-            console.error(`Erreur lors de la récupération de ${url}`, error);
+            console.error(`Error during retrieval of ${url}`, error);
         }
     }
 }
