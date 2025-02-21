@@ -5,6 +5,7 @@ export const USER_ACTIONS = Object.freeze({
     UPDATE_PASSWORD: "updatePassword",
     RESET_PASSWORD: "resetPassword",
     LOGOUT: "logout",
+    DELETE: "delete"
 });
 
 export class UserService {
@@ -20,6 +21,7 @@ export class UserService {
             500: "Unable to register at the moment. Please try again later."
         },
         [USER_ACTIONS.UPDATE_USERNAME]: {
+            401: "User is not authenticated or user ID is missing.",
             409: "This username is already taken. Please choose a different one.",
             500: "Unable to change the username at the moment. Please try again later."
         },
@@ -30,6 +32,10 @@ export class UserService {
         [USER_ACTIONS.RESET_PASSWORD]: {
             401: "The security answers provided are incorrect. Please try again.",
             404: "No account found with the provided username."
+        },
+        [USER_ACTIONS.DELETE]: {
+            401: "User is not authenticated or user ID is missing.",
+            404: "The user account you are trying to delete does not exist."
         },
         default: {
             400: "Invalid request.",
@@ -100,6 +106,9 @@ export class UserService {
     }
 
     async updateUsername(newUsername) {
+        if (!this.user?._id)
+            return {success: false, error: this._getErrorMessage(401, USER_ACTIONS.UPDATE_USERNAME)};
+
         const response = await this._request("PATCH", `/api/user/${this.user._id}`, {name: newUsername});
         if (response.success) {
             const data = response.data;
@@ -107,10 +116,7 @@ export class UserService {
             localStorage.setItem("user", JSON.stringify(this._user));
             return {success: true, username: data.user.name};
         }
-        return {
-            success: false,
-            error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)
-        };
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)};
     }
 
     async updatePassword(curPassword, newPassword) {
@@ -121,19 +127,25 @@ export class UserService {
         if (response.success)
             return {success: true, message: "Password successfully modified"};
 
-        return {
-            success: false,
-            error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_PASSWORD)
-        };
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_PASSWORD)};
     }
 
     async logout() {
         await this._request("POST", "/api/user/disconnect");
-        this._user = null;
-        this._accessToken = null;
-        this._refreshToken = null;
+        this._reset();
+    }
 
-        this._clearLocalStorage();
+    async delete() {
+        if (!this.user?._id)
+            return {success: false, error: this._getErrorMessage(401, USER_ACTIONS.UPDATE_USERNAME)};
+
+        const response = await this._request("DELETE", `/api/user/${this.user._id}`);
+        if (response.success) {
+            this._reset();
+            return {success: true, message: "User successfully deleted."};
+        }
+
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.DELETE)};
     }
 
     async resetPassword(data) {
@@ -194,5 +206,13 @@ export class UserService {
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+    }
+
+    _reset() {
+        this._user = null;
+        this._accessToken = null;
+        this._refreshToken = null;
+
+        this._clearLocalStorage();
     }
 }

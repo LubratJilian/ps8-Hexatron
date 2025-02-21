@@ -10,6 +10,7 @@ export class UserProfile extends BaseAuth {
         PROFILE_PICTURE: "profile-picture",
         USERNAME: "username",
         LOGOUT: "logout",
+        DELETE: "delete",
         USERNAME_INPUT: "username-input",
         EDIT_USERNAME: "edit-username",
         USERNAME_DIV: "username-div",
@@ -19,7 +20,7 @@ export class UserProfile extends BaseAuth {
         EDIT_PASSWORD: "edit-password",
         CURRENT_PASSWORD_INPUT: "current-password-input",
         NEW_PASSWORD_INPUT: "new-password-input",
-        CONFIRM_PASSWORD_INPUT: "confirm-password-input",
+        CONFIRM_PASSWORD_INPUT: "confirm-password-input"
     };
 
     constructor() {
@@ -52,11 +53,20 @@ export class UserProfile extends BaseAuth {
         this.addAutoCleanListener(this._elements.LOGOUT, "click", () => this.handleLogout());
         this.addAutoCleanListener(this._elements.EDIT_USERNAME, "click", () => this.toggleUsernameEdit());
         this.addAutoCleanListener(this._elements.EDIT_PASSWORD, "click", () => this.togglePasswordEdit());
+        this.addAutoCleanListener(this._elements.DELETE, "click", () => this.handleDeletion());
     }
 
     async handleLogout() {
         await UserService.getInstance().logout();
         window.location.href = "/";
+    }
+
+    async handleDeletion() {
+        const data = await UserService.getInstance().delete();
+        if (data.success) {
+            alert(data.message);
+            window.location.href = "/";
+        } else alert(data.error);
     }
 
     updateUserData() {
