@@ -44,7 +44,7 @@ const routes = [
     },
     {
         method: "PATCH",
-        path: [":id"],
+        path: ["me"],
         handler: controller.update,
     },
     {
@@ -69,7 +69,7 @@ const routes = [
     },
     {
         method: "DELETE",
-        path: [":id"],
+        path: ["me"],
         handler: controller.delete
     }
 ];
@@ -93,9 +93,8 @@ module.exports = createServer(async (req, res) => {
                 route.path.every((segment, index) => segment.startsWith(":") || segment === path[index])
         );
 
-        if (!route) {
+        if (!route)
             throw new HttpError(404, "Route not found");
-        }
 
         req.body = await parseRequestBody(req);
         await route.handler(req, res);

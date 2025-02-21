@@ -3,7 +3,7 @@ const {
     refreshAccessToken, deleteUserByID
 } = require("./database");
 const bcrypt = require("bcrypt");
-const {HttpError, convertToString, DATABASE_ERRORS, parseRequestPath} = require("./utils");
+const {HttpError, convertToString, DATABASE_ERRORS} = require("./utils");
 const saltRounds = 10;
 
 async function hashPassword(password) {
@@ -85,7 +85,7 @@ exports.login = async (req, res) => {
 
 exports.update = async (req, res) => {
     try {
-        const userID = parseRequestPath(req)[0];
+        const userID = getIDInRequest(req);
         const userData = req.body;
         await updateUser(userData, userID);
         res.writeHead(200, {"Content-Type": "application/json"});
@@ -189,7 +189,7 @@ exports.disconnect = async (req, res) => {
 
 exports.delete = async (req, res) => {
     try {
-        const userID = parseRequestPath(req)[0];
+        const userID = getIDInRequest(req);
         await deleteUserByID(userID);
 
         res.writeHead(204, {"Content-Type": "application/json"});

@@ -21,7 +21,6 @@ export class UserService {
             500: "Unable to register at the moment. Please try again later."
         },
         [USER_ACTIONS.UPDATE_USERNAME]: {
-            401: "User is not authenticated or user ID is missing.",
             409: "This username is already taken. Please choose a different one.",
             500: "Unable to change the username at the moment. Please try again later."
         },
@@ -34,19 +33,18 @@ export class UserService {
             404: "No account found with the provided username."
         },
         [USER_ACTIONS.DELETE]: {
-            401: "User is not authenticated or user ID is missing.",
-            404: "The user account you are trying to delete does not exist."
+            404: "The user account you are trying to delete does not exist.",
+            500: "Unable to delete your account at the moment. Please try again later."
         },
         default: {
-            400: "Invalid request.",
-            401: "Unauthorized access.",
-            403: "Forbidden action.",
-            404: "Resource not found.",
-            500: "Server error. Please try again later.",
+            400: "Something went wrong with your request. Please check your input and try again.",
+            401: "You need to log in to perform this action.",
+            403: "You do not have permission to perform this action.",
+            404: "The resource you are looking for could not be found.",
+            500: "We are experiencing some technical difficulties. Please try again later.",
             503: "Unable to connect to the server. Please check your internet connection and try again."
         }
     };
-
 
     constructor() {
         if (UserService._instance) return UserService._instance;
@@ -106,10 +104,7 @@ export class UserService {
     }
 
     async updateUsername(newUsername) {
-        if (!this.user?._id)
-            return {success: false, error: this._getErrorMessage(401, USER_ACTIONS.UPDATE_USERNAME)};
-
-        const response = await this._request("PATCH", `/api/user/${this.user._id}`, {name: newUsername});
+        const response = await this._request("PATCH", `/api/user/me`, {name: newUsername});
         if (response.success) {
             const data = response.data;
             this.user.name = data.user.name;
@@ -136,10 +131,7 @@ export class UserService {
     }
 
     async delete() {
-        if (!this.user?._id)
-            return {success: false, error: this._getErrorMessage(401, USER_ACTIONS.UPDATE_USERNAME)};
-
-        const response = await this._request("DELETE", `/api/user/${this.user._id}`);
+        const response = await this._request("DELETE", `/api/user/me`);
         if (response.success) {
             this._reset();
             return {success: true, message: "User successfully deleted."};
