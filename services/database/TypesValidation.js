@@ -38,7 +38,9 @@ const User = {
         minItems: 3,
         maxItems: 3,
         items: {
-            bsonType: "string"
+            bsonType: "string",
+            minLength: 1,
+            maxLength: 50
         }
     }
 };
