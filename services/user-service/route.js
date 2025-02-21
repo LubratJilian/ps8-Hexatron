@@ -1,8 +1,10 @@
 const {createServer} = require("node:http");
 const controller = require("./controller");
-const {parseRequestPath} = require("./utils");
+const {parseRequestPath, HttpError} = require("./utils");
 
-function handleError(res, error) {
+function handleError(req, res, error) {
+    console.error(`[${new Date().toISOString()}] [${req.method}] ${req.url} - Error:`, error);
+
     const statusCode = error.status || 500;
     const message = statusCode === 500 ? "Internal Server Error" : error.message;
     res.writeHead(statusCode, {"Content-Type": "application/json"});
@@ -20,7 +22,7 @@ function parseRequestBody(request) {
             try {
                 resolve(JSON.parse(body));
             } catch (e) {
-                reject({statusCode: 400, message: "Invalid JSON"});
+                reject(new HttpError(400, "Invalid JSON"));
             }
         });
 
@@ -92,13 +94,12 @@ module.exports = createServer(async (req, res) => {
         );
 
         if (!route) {
-            handleError(res, {statusCode: 404, message: "Route not found"});
-            return;
+            throw new HttpError(404, "Route not found");
         }
 
         req.body = await parseRequestBody(req);
         await route.handler(req, res);
     } catch (error) {
-        handleError(res, error);
+        handleError(req, res, error);
     }
 });
