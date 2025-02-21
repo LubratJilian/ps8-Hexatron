@@ -1,6 +1,6 @@
 const {
     deleteToken, addUser, generateToken, generateRefreshToken, checkPassword, updateUser, resetPassword,
-    refreshAccessToken
+    refreshAccessToken, deleteUserByID
 } = require("./database");
 const bcrypt = require("bcrypt");
 const {HttpError, convertToString, DATABASE_ERRORS, parseRequestPath} = require("./utils");
@@ -88,7 +88,7 @@ exports.update = async (req, res) => {
         const userID = parseRequestPath(req)[0];
         const userData = req.body;
         await updateUser(userData, userID);
-        res.writeHead(201, {"Content-Type": "application/json"});
+        res.writeHead(200, {"Content-Type": "application/json"});
         res.end(JSON.stringify({message: "User modified", user: userData}));
     } catch (error) {
         if (error instanceof HttpError)
@@ -114,7 +114,7 @@ exports.updatePassword = async (req, res) => {
         credential.newPassword = await hashPassword(credential.newPassword);
         await updateUser({password: credential.newPassword}, userID);
 
-        res.writeHead(201, {"Content-Type": "application/json"});
+        res.writeHead(200, {"Content-Type": "application/json"});
         res.end(JSON.stringify({message: "Password Modified"}));
     } catch (error) {
         if (error instanceof HttpError)
@@ -149,8 +149,6 @@ exports.resetPassword = async (req, res) => {
             throw new HttpError(401, "Security answers do not match");
         if (error.message === DATABASE_ERRORS.USER_NOT_FOUND)
             throw new HttpError(404, "User not found");
-        if (error.message === DATABASE_ERRORS.USER_UPDATE_FAILED)
-            throw new HttpError(500, "Password reset failed");
 
         throw new HttpError(500, "Internal server error during password reset");
     }
@@ -160,7 +158,7 @@ exports.refreshToken = async (req, res) => {
     try {
         const token = await refreshAccessToken(getIDInRequest(req));
 
-        res.writeHead(201, {"Content-Type": "application/json"});
+        res.writeHead(200, {"Content-Type": "application/json"});
         res.end(JSON.stringify({message: "New Token", accessToken: token}));
     } catch (error) {
         if (error instanceof HttpError)
@@ -180,13 +178,28 @@ exports.disconnect = async (req, res) => {
         const userID = getIDInRequest(req);
         await deleteToken(userID);
 
-        res.writeHead(201, {"Content-Type": "application/json"});
-        res.end(JSON.stringify({message: "Disconnected successfully"}));
+        res.writeHead(204, {"Content-Type": "application/json"});
+        res.end();
     } catch (error) {
         if (error instanceof HttpError)
             throw error;
         if (error.message === DATABASE_ERRORS.TOKEN_NOT_FOUND)
             throw new HttpError(404, "User was not logged in or already logged out");
         throw new HttpError(500, "Internal server error during logout");
+    }
+};
+
+exports.delete = async (req, res) => {
+    try {
+        const userID = parseRequestPath(req)[0];
+        await deleteUserByID(userID);
+
+        res.writeHead(204, {"Content-Type": "application/json"});
+        res.end();
+    } catch (error) {
+        if (error.message === DATABASE_ERRORS.USER_NOT_FOUND)
+            throw new HttpError(404, "User not found");
+
+        throw new HttpError(500, "Internal server error during user deletion");
     }
 };

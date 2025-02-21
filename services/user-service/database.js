@@ -157,4 +157,5 @@ module.exports = {
     updateUser,
     resetPassword,
     refreshAccessToken,
+    deleteUserByID
 };

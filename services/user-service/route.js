@@ -64,6 +64,11 @@ const routes = [
         method: "POST",
         path: ["updatePassword"],
         handler: controller.updatePassword
+    },
+    {
+        method: "DELETE",
+        path: [":id"],
+        handler: controller.delete
     }
 ];
 
@@ -71,7 +76,7 @@ module.exports = createServer(async (req, res) => {
     if (req.method === "OPTIONS") {
         res.writeHead(204, {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+            "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS, DELETE",
             "Access-Control-Allow-Headers": ["Content-Type", "Authorization"]
         });
         res.end();
