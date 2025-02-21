@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y curl
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
-COPY ./index.js /app/index.js
+COPY ./*.js /app/
 ##COPY ./healthcheck.js /app
 EXPOSE 8003
 CMD ["npm", "start"]

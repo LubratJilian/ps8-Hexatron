@@ -41,7 +41,7 @@ services:
       mongodb:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8003/health" ]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8003/api/user/health" ]
       interval: 10s
       retries: 5
       start_period: 20s

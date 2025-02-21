@@ -33,6 +33,11 @@ function parseRequestBody(request) {
 
 const routes = [
     {
+        method: "OPTIONS",
+        path: ["*"],
+        handler: controller.options,
+    },
+    {
         method: "POST",
         path: ["register"],
         handler: controller.register,
@@ -71,26 +76,21 @@ const routes = [
         method: "DELETE",
         path: ["me"],
         handler: controller.delete
+    },
+    {
+        method: "GET",
+        path: ["health"],
+        handler: controller.health
     }
 ];
 
 module.exports = createServer(async (req, res) => {
-    if (req.method === "OPTIONS") {
-        res.writeHead(204, {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS, DELETE",
-            "Access-Control-Allow-Headers": ["Content-Type", "Authorization"]
-        });
-        res.end();
-        return;
-    }
-
     try {
         const path = parseRequestPath(req);
         const route = routes.find(
             (route) =>
                 route.method === req.method &&
-                route.path.every((segment, index) => segment.startsWith(":") || segment === path[index])
+                (route.path[0] === "*" || route.path.every((segment, index) => segment.startsWith(":") || segment === path[index]))
         );
 
         if (!route)
