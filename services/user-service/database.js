@@ -1,7 +1,7 @@
 const {MongoClient} = require("mongodb");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const {convertToID, convertToString, DATABASE_ERRORS} = require("./utils");
+const {convertToID, convertToString, DATABASE_ERRORS, USER_FIELDS} = require("./utils");
 
 const userCollection = "users";
 const refreshTokenCollection = "refreshTokens";
@@ -29,12 +29,12 @@ async function mongoOperation(operation) {
     }
 }
 
-async function getUserByID(userID, includePassword = false) {
-    const projection = includePassword ? {} : {password: 0};
+async function getUserByFilter(filter, excludedFields = []) {
+    const projection = excludedFields.reduce((acc, field) => ({...acc, [field]: 0}), {});
 
     const user = await mongoOperation(() =>
         db.collection(userCollection).findOne(
-            {_id: convertToID(userID)},
+            filter,
             {projection}
         )
     );
@@ -42,6 +42,14 @@ async function getUserByID(userID, includePassword = false) {
         throw new Error(DATABASE_ERRORS.USER_NOT_FOUND);
 
     return user;
+}
+
+async function getUserByName(name, excludedFields = []) {
+    return getUserByFilter({name}, excludedFields);
+}
+
+async function getUserByID(id, excludedFields = []) {
+    return getUserByFilter({_id: convertToID(id)}, excludedFields);
 }
 
 function generateToken(userID, access) {
@@ -79,7 +87,7 @@ async function addUser(newUser) {
     const result = await mongoOperation(() =>
         db.collection(userCollection).insertOne(newUser)
     );
-    return getUserByID(convertToString(result.insertedId));
+    return getUserByID(convertToString(result.insertedId), [USER_FIELDS.password, USER_FIELDS.answers]);
 }
 
 async function getUserID(userName) {
@@ -102,8 +110,8 @@ async function deleteUserByID(userID) {
 
 async function checkPassword(credential, enteredPwd, withID) {
     const user = withID
-        ? await getUserByID(credential, true)
-        : await mongoOperation(() => db.collection(userCollection).findOne({name: credential}));
+        ? await getUserByID(credential, [USER_FIELDS.answers])
+        : await getUserByName(credential, [USER_FIELDS.answers])
     if (!user)
         throw new Error(DATABASE_ERRORS.USER_NOT_FOUND);
 
@@ -111,7 +119,7 @@ async function checkPassword(credential, enteredPwd, withID) {
     if (!match)
         throw new Error(DATABASE_ERRORS.INVALID_PASSWORD);
 
-    const {password, answers, ...res} = user;
+    const {password, ...res} = user;
     return res;
 }
 

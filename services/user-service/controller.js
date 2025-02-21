@@ -11,7 +11,7 @@ async function hashPassword(password) {
         const salt = await bcrypt.genSalt(saltRounds);
         return await bcrypt.hash(password, salt);
     } catch (error) {
-        throw new HttpError(500, 'Internal server error while hashing password');
+        throw new HttpError(500, error.message);
     }
 }
 
@@ -28,14 +28,14 @@ exports.register = async (req, res) => {
     try {
         const userData = req.body;
         userData.password = await hashPassword(userData.password);
-        const newUser = await addUser(userData);
-        newUser._id = convertToString(newUser._id);
-        const accessToken = generateToken(newUser._id, true);
-        const refreshToken = await generateRefreshToken(newUser._id);
+        const {_id, ...newUser} = await addUser(userData);
+        const id = convertToString(_id);
+        const accessToken = generateToken(id, true);
+        const refreshToken = await generateRefreshToken(id);
 
         res.writeHead(201, {"Content-Type": "application/json"});
         res.end(JSON.stringify({
-            message: "User Created",
+            message: "User successfully registered.",
             user: newUser,
             accessToken: accessToken,
             refreshToken: refreshToken
@@ -49,21 +49,21 @@ exports.register = async (req, res) => {
         if (error.message === DATABASE_ERRORS.VALIDATION_FAILED)
             throw new HttpError(400, "Invalid user data format");
 
-        throw new HttpError(500, "Internal server error during register");
+        throw new HttpError(500, error.message);
     }
 };
 
 exports.login = async (req, res) => {
     try {
         const credentials = req.body;
-        let {password, ...user} = await checkPassword(credentials.name, credentials.password, false);
-        const id = convertToString(user._id);
+        let {_id, ...user} = await checkPassword(credentials.name, credentials.password, false);
+        const id = convertToString(_id);
         const accessToken = generateToken(id, true);
         const refreshToken = await generateRefreshToken(id);
 
         res.writeHead(200, {"Content-Type": "application/json"});
         res.end(JSON.stringify({
-            message: "User login",
+            message: "User successfully logged in.",
             user: user,
             accessToken: accessToken,
             refreshToken: refreshToken
@@ -79,7 +79,7 @@ exports.login = async (req, res) => {
             error.message === DATABASE_ERRORS.TOKEN_INSERT_FAILED)
             throw new HttpError(500, "Token generation failed");
 
-        throw new HttpError(500, "Internal server error during login");
+        throw new HttpError(500, error.message);
     }
 };
 
@@ -89,7 +89,7 @@ exports.update = async (req, res) => {
         const userData = req.body;
         await updateUser(userData, userID);
         res.writeHead(200, {"Content-Type": "application/json"});
-        res.end(JSON.stringify({message: "User modified", user: userData}));
+        res.end(JSON.stringify({message: "User successfully updated.", user: userData}));
     } catch (error) {
         if (error instanceof HttpError)
             throw error;
@@ -115,7 +115,7 @@ exports.updatePassword = async (req, res) => {
         await updateUser({password: credential.newPassword}, userID);
 
         res.writeHead(200, {"Content-Type": "application/json"});
-        res.end(JSON.stringify({message: "Password Modified"}));
+        res.end(JSON.stringify({message: "Password successfully updated."}));
     } catch (error) {
         if (error instanceof HttpError)
             throw error;
@@ -127,7 +127,7 @@ exports.updatePassword = async (req, res) => {
         if (error.message === DATABASE_ERRORS.VALIDATION_FAILED)
             throw new HttpError(400, "Invalid password format");
 
-        throw new HttpError(500, "Internal server error during password update");
+        throw new HttpError(500, error.message);
     }
 };
 
@@ -138,7 +138,7 @@ exports.resetPassword = async (req, res) => {
 
         await resetPassword(username, answers, password);
         res.writeHead(201, {"Content-Type": "application/json"});
-        res.end(JSON.stringify({message: "Password Modified"}));
+        res.end(JSON.stringify({message: "Password has been successfully reset."}));
     } catch (error) {
         if (error instanceof HttpError)
             throw error;
@@ -148,7 +148,7 @@ exports.resetPassword = async (req, res) => {
         if (error.message === DATABASE_ERRORS.USER_NOT_FOUND)
             throw new HttpError(404, "User not found");
 
-        throw new HttpError(500, "Internal server error during password reset");
+        throw new HttpError(500, error.message);
     }
 };
 
@@ -157,7 +157,7 @@ exports.refreshToken = async (req, res) => {
         const token = await refreshAccessToken(getIDInRequest(req));
 
         res.writeHead(200, {"Content-Type": "application/json"});
-        res.end(JSON.stringify({message: "New Token", accessToken: token}));
+        res.end(JSON.stringify({message: "New access token generated successfully.", accessToken: token}));
     } catch (error) {
         if (error instanceof HttpError)
             throw error;
@@ -167,7 +167,7 @@ exports.refreshToken = async (req, res) => {
         if (error.message === DATABASE_ERRORS.TOKEN_GENERATION_FAILED)
             throw new HttpError(500, "Failed to generate new access token");
 
-        throw new HttpError(500, "Internal server error during token refresh");
+        throw new HttpError(500, error.message);
     }
 };
 
@@ -183,7 +183,7 @@ exports.disconnect = async (req, res) => {
             throw error;
         if (error.message === DATABASE_ERRORS.TOKEN_NOT_FOUND)
             throw new HttpError(404, "User was not logged in or already logged out");
-        throw new HttpError(500, "Internal server error during logout");
+        throw new HttpError(500, error.message);
     }
 };
 
@@ -198,7 +198,7 @@ exports.delete = async (req, res) => {
         if (error.message === DATABASE_ERRORS.USER_NOT_FOUND)
             throw new HttpError(404, "User not found");
 
-        throw new HttpError(500, "Internal server error during user deletion");
+        throw new HttpError(500, error.message);
     }
 };
 

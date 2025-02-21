@@ -1,5 +1,13 @@
 const {ObjectId} = require("mongodb");
 
+const USER_FIELDS = Object.freeze({
+    id: '_id',
+    name: 'name',
+    password: 'password',
+    answers: 'answers',
+    parameters: 'parameters'
+});
+
 const DATABASE_ERRORS = Object.freeze({
     USER_NOT_FOUND: "USER_NOT_FOUND",
     TOKEN_GENERATION_FAILED: "TOKEN_GENERATION_FAILED",
@@ -35,9 +43,10 @@ function convertToString(id) {
 }
 
 module.exports = {
+    USER_FIELDS,
+    DATABASE_ERRORS,
     HttpError,
     convertToID,
     convertToString,
-    DATABASE_ERRORS,
     parseRequestPath
 };
