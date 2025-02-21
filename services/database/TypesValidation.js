@@ -23,7 +23,8 @@ const User = {
     name: {
         bsonType: "string",
         minLength: 4,
-        maxLength: 20
+        maxLength: 20,
+        pattern: "^[a-zA-Z0-9_\\-]+$"
     },
     parameters: {
         bsonType: "string",
