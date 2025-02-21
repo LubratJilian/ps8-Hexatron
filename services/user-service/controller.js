@@ -124,8 +124,6 @@ exports.updatePassword = async (req, res) => {
             throw new HttpError(401, "Current password is incorrect");
         if (error.message === DATABASE_ERRORS.USER_NOT_FOUND)
             throw new HttpError(404, "User not found");
-        if (error.message === DATABASE_ERRORS.USER_UPDATE_FAILED)
-            throw new HttpError(500, "Password update failed");
         if (error.message === DATABASE_ERRORS.VALIDATION_FAILED)
             throw new HttpError(400, "Invalid password format");
 
