@@ -29,7 +29,7 @@ async function startService() {
 
         for (const collectionName of Object.keys(users_collections)) {
             const user = await adminDb.command({usersInfo: users_collections[collectionName]["userName"]});
-            if (!(user.users && user.users.length > 0)) {
+            if (!user?.users?.length) {
                 await adminDb.command({
                     createUser: users_collections[collectionName]["userName"],
                     pwd: users_collections[collectionName]["password"],
@@ -39,7 +39,7 @@ async function startService() {
             }
 
             const existingRole = await adminDb.command({rolesInfo: users_collections[collectionName]["userName"]});
-            if (!existingRole.roles.length > 0) {
+            if (!existingRole?.roles?.length) {
                 await adminDb.command({
                     createRole: users_collections[collectionName]["userName"],
                     privileges: [
