@@ -6,8 +6,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
       - ./database/mongodb:/data/db
     expose:
@@ -24,7 +24,10 @@ services:
     networks:
       - network-services
     environment:
-      - URI=mongodb://root:root@mongodb:27017/?authSource=admin
+      - URI=${URI_DATABASE_ROOT}
+      - COLLECTIONS=${USER_COLLECTION},${TOKEN_COLLECTION}
+      - USERS=${MONGO_USER_SERVICE_USERNAME};${MONGO_USER_SERVICE_PASSWORD}
+      - DB_NAME=${DB_NAME}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -34,12 +37,17 @@ services:
     networks:
       - network-services
     environment:
-      - URI=mongodb://root:root@mongodb:27017/?authSource=admin
+      - URI=${URI_DATABASE_USER_SERVICE}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
+      - DB_NAME=${DB_NAME}
     expose:
       - "8003"
     depends_on:
       mongodb:
         condition: service_healthy
+      database-initializer:
+        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8003/api/user/health" ]
       interval: 10s
@@ -54,7 +62,8 @@ services:
     expose:
       - "8002"
     environment:
-      - GATEWAY_URL=http://gateway:8000
+      - GATEWAY_URL=${GATEWAY_URL}
+      - GAME_SERVICE_URL=${GAME_SERVICE_URL}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -88,9 +97,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - USER_SERVICE_URL=http://user-service:8003
-      - GAME_SERVICE_URL=http://game-service:8002
-      - FILES_URL=http://files:8001
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
+      - GAME_SERVICE_URL=${GAME_SERVICE_URL}
+      - FILES_URL=${FILES_URL}
+      - GATEWAY_URL=${GATEWAY_URL}
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
     depends_on:
       mongodb:
         condition: service_healthy
