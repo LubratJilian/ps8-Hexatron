@@ -87,7 +87,18 @@ async function addUser(newUser) {
     const result = await mongoOperation(() =>
         db.collection(userCollection).insertOne(newUser)
     );
-    return getUserByID(convertToString(result.insertedId), [USER_FIELDS.password, USER_FIELDS.answers]);
+
+    const userId = convertToString(result.insertedId);
+    try {
+        const user = await getUserByID(userId, [USER_FIELDS.password, USER_FIELDS.answers, USER_FIELDS.id]);
+
+        const accessToken = generateToken(userId, true);
+        const refreshToken = await generateRefreshToken(userId);
+        return {accessToken, refreshToken, user};
+    } catch (error) {
+        await deleteUserByID(userId);
+        throw error;
+    }
 }
 
 async function getUserID(userName) {

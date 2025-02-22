@@ -28,15 +28,12 @@ exports.register = async (req, res) => {
     try {
         const userData = req.body;
         userData.password = await hashPassword(userData.password);
-        const {_id, ...newUser} = await addUser(userData);
-        const id = convertToString(_id);
-        const accessToken = generateToken(id, true);
-        const refreshToken = await generateRefreshToken(id);
+        const {accessToken, refreshToken, user} = await addUser(userData);
 
         res.writeHead(201, {"Content-Type": "application/json"});
         res.end(JSON.stringify({
             message: "User successfully registered.",
-            user: newUser,
+            user: user,
             accessToken: accessToken,
             refreshToken: refreshToken
         }));
