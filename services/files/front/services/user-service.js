@@ -77,7 +77,7 @@ export class UserService {
 
     async register(data) {
         data["parameters"] = " ";
-        const response = await this._request("POST", "/api/user/register", data);
+        const response = await this._request("POST", "api/user/register", data);
         if (response.success) {
             const data = response.data;
             this._user = data.user;
@@ -91,7 +91,7 @@ export class UserService {
     }
 
     async login(data) {
-        const response = await this._request("POST", "/api/user/login", data);
+        const response = await this._request("POST", "api/user/login", data);
         if (response.success) {
             const data = response.data;
             this._user = data.user;
@@ -104,7 +104,7 @@ export class UserService {
     }
 
     async updateUsername(newUsername) {
-        const response = await this._request("PATCH", `/api/user/me`, {name: newUsername});
+        const response = await this._request("PATCH", `api/user/me`, {name: newUsername});
         if (response.success) {
             const data = response.data;
             this.user.name = data.user.name;
@@ -115,7 +115,7 @@ export class UserService {
     }
 
     async updatePassword(curPassword, newPassword) {
-        const response = await this._request("POST", "/api/user/updatePassword", {
+        const response = await this._request("POST", "api/user/updatePassword", {
             oldPassword: curPassword,
             newPassword
         });
@@ -126,12 +126,12 @@ export class UserService {
     }
 
     async logout() {
-        await this._request("POST", "/api/user/disconnect");
+        await this._request("POST", "api/user/disconnect");
         this._reset();
     }
 
     async delete() {
-        const response = await this._request("DELETE", `/api/user/me`);
+        const response = await this._request("DELETE", `api/user/me`);
         if (response.success) {
             this._reset();
             return {success: true, message: "User successfully deleted."};
@@ -141,7 +141,7 @@ export class UserService {
     }
 
     async resetPassword(data) {
-        const response = await this._request("POST", "/api/user/resetPassword", data);
+        const response = await this._request("POST", "api/user/resetPassword", data);
         if (response.success)
             return {success: true, message: "Password successfully reset."};
 
@@ -149,7 +149,7 @@ export class UserService {
     }
 
     async refreshAccessToken() {
-        const response = await this._request("POST", "/api/user/refreshToken", null, this._refreshToken);
+        const response = await this._request("POST", "api/user/refreshToken", null, this._refreshToken);
         if (response) {
             this._accessToken = response.accessToken;
             localStorage.setItem("accessToken", this._accessToken);
@@ -169,7 +169,7 @@ export class UserService {
         };
 
         try {
-            const response = await fetch(`${window.location.hostname}${endpoint}`, options);
+            const response = await fetch(`${window.location}${endpoint}`, options);
             const data = await response.json().catch(() => null);
             if (response.status === 498) {
                 await this.refreshAccessToken();

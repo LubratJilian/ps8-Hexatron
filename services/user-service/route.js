@@ -33,11 +33,6 @@ function parseRequestBody(request) {
 
 const routes = [
     {
-        method: "OPTIONS",
-        path: ["*"],
-        handler: controller.options,
-    },
-    {
         method: "POST",
         path: ["register"],
         handler: controller.register,

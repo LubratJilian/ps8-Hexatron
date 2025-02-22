@@ -206,12 +206,3 @@ exports.health = async (req, res) => {
     res.writeHead(204);
     res.end();
 };
-
-exports.options = async (req, res) => {
-    res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS, DELETE",
-        "Access-Control-Allow-Headers": ["Content-Type", "Authorization"]
-    });
-    res.end();
-};

@@ -5,7 +5,7 @@ const {convertToID, convertToString, DATABASE_ERRORS, USER_FIELDS} = require("./
 
 const userCollection = "users";
 const refreshTokenCollection = "refreshTokens";
-const dbName = "database";
+const dbName = process.env.DB_NAME;
 const uri = process.env.URI;
 const client = new MongoClient(uri);
 const db = client.db(dbName);

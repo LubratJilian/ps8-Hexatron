@@ -37,6 +37,7 @@ services:
     networks:
       - network-services
     environment:
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
       - URI=${URI_DATABASE_USER_SERVICE}
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
