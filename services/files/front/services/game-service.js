@@ -18,7 +18,7 @@ export class GameService {
 
         this._game = null;
         this._context = null;
-        this._socket = io(`http://${window.location.hostname}:8000/game`);
+        this._socket = io(`http://${window.location.hostname}/game`);
 
         this.socket.on("connect", () => {
             console.log("user connected " + this._socket.id);
