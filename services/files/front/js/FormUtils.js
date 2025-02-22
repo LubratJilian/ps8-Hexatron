@@ -4,7 +4,6 @@ export function checkConfirmPassword(inputs) {
 
     if (confirmPasswordInput) {
         const passwordInput = inputs.find(input => input.id === "password");
-        console.log(passwordInput);
         if (passwordInput) {
             isValid = getFormInputValue(passwordInput) === getFormInputValue(confirmPasswordInput);
             updateErrorMessage(confirmPasswordInput, !isValid, "Passwords don't match");
