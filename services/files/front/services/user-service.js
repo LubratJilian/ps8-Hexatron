@@ -1,5 +1,50 @@
+export const USER_ACTIONS = Object.freeze({
+    LOGIN: "login",
+    REGISTER: "register",
+    UPDATE_USERNAME: "editUsername",
+    UPDATE_PASSWORD: "updatePassword",
+    RESET_PASSWORD: "resetPassword",
+    LOGOUT: "logout",
+    DELETE: "delete"
+});
+
 export class UserService {
     static _instance = null;
+    static ERROR_MESSAGES = {
+        [USER_ACTIONS.LOGIN]: {
+            400: "Invalid login credentials.",
+            401: "Incorrect password or account does not exist.",
+            500: "Unable to log in at the moment. Please try again later."
+        },
+        [USER_ACTIONS.REGISTER]: {
+            409: "This username is already taken. Please choose a different one.",
+            500: "Unable to register at the moment. Please try again later."
+        },
+        [USER_ACTIONS.UPDATE_USERNAME]: {
+            409: "This username is already taken. Please choose a different one.",
+            500: "Unable to change the username at the moment. Please try again later."
+        },
+        [USER_ACTIONS.UPDATE_PASSWORD]: {
+            401: "The current password is incorrect. Please try again.",
+            500: "Unable to update the password at the moment. Please try again later."
+        },
+        [USER_ACTIONS.RESET_PASSWORD]: {
+            401: "The security answers provided are incorrect. Please try again.",
+            404: "No account found with the provided username."
+        },
+        [USER_ACTIONS.DELETE]: {
+            404: "The user account you are trying to delete does not exist.",
+            500: "Unable to delete your account at the moment. Please try again later."
+        },
+        default: {
+            400: "Something went wrong with your request. Please check your input and try again.",
+            401: "You need to log in to perform this action.",
+            403: "You do not have permission to perform this action.",
+            404: "The resource you are looking for could not be found.",
+            500: "We are experiencing some technical difficulties. Please try again later.",
+            503: "Unable to connect to the server. Please check your internet connection and try again."
+        }
+    };
 
     constructor() {
         if (UserService._instance) return UserService._instance;
@@ -7,7 +52,6 @@ export class UserService {
         this._user = JSON.parse(localStorage.getItem("user")) || null;
         this._accessToken = localStorage.getItem("accessToken") || null;
         this._refreshToken = localStorage.getItem("refreshToken") || null;
-        this._listeners = {};
 
         UserService._instance = this;
     }
@@ -27,114 +71,96 @@ export class UserService {
         return this.user !== null;
     }
 
-    on(eventName, callback) {
-        if (!this._listeners[eventName]) {
-            this._listeners[eventName] = [];
-        }
-        this._listeners[eventName].push(callback);
-    }
-
-    off(eventName, callback) {
-        if (this._listeners[eventName]) {
-            this._listeners[eventName] = this._listeners[eventName].filter(cb => cb !== callback);
-            if (this._listeners[eventName].length === 0) {
-                delete this._listeners[eventName];
-            }
-        }
-    }
-
-    emit(eventName, data) {
-        if (this._listeners[eventName]) {
-            this._listeners[eventName].forEach(callback => callback(data));
-        }
+    _getErrorMessage(status, action) {
+        return UserService.ERROR_MESSAGES[action]?.[status] || UserService.ERROR_MESSAGES.default[status] || "An unknown error has occurred.";
     }
 
     async register(data) {
         data["parameters"] = " ";
-        const response = await this._request("POST", "/api/user/register", data);
-        if (response) {
-            this._user = response.user;
-            this._accessToken = response.accessToken;
-            this._refreshToken = response.refreshToken;
+        const response = await this._request("POST", "api/user/register", data);
+        if (response.success) {
+            const data = response.data;
+            this._user = data.user;
+            this._accessToken = data.accessToken;
+            this._refreshToken = data.refreshToken;
 
             this._saveToLocalStorage();
+            return {success: true, user: data.user};
         }
-        this.emit("register", response);
-        return response;
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.REGISTER)};
     }
 
     async login(data) {
-        const response = await this._request("POST", "/api/user/login", data);
-        if (response) {
-            this._user = response.user;
-            this._accessToken = response.accessToken;
-            this._refreshToken = response.refreshToken;
+        const response = await this._request("POST", "api/user/login", data);
+        if (response.success) {
+            const data = response.data;
+            this._user = data.user;
+            this._accessToken = data.accessToken;
+            this._refreshToken = data.refreshToken;
             this._saveToLocalStorage();
-            this.emit("login", {success: true, user: response.user});
-        } else {
-            this.emit("login", {success: false, error: "The password is incorrect"});
+            return {success: true, user: data.user};
         }
-        return response;
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.LOGIN)};
     }
 
-    async editUsername(newUsername) {
-        const response = await this._request("POST", "/api/user/modify", {name: newUsername});
-        if (response) {
-            this._user.name = newUsername;
+    async updateUsername(newUsername) {
+        const response = await this._request("PATCH", `api/user/me`, {name: newUsername});
+        if (response.success) {
+            const data = response.data;
+            this.user.name = data.user.name;
             localStorage.setItem("user", JSON.stringify(this._user));
+            return {success: true, username: data.user.name};
         }
-        const username = response.user.name;
-        this.user.name = username;
-        this.emit("editUsername", username);
-        return response;
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)};
     }
 
-    async editPassword(curPassword, newPassword) {
-        const response = await this._request("POST", "/api/user/modifyPassword", {
+    async updatePassword(curPassword, newPassword) {
+        const response = await this._request("POST", "api/user/updatePassword", {
             oldPassword: curPassword,
             newPassword
         });
-        if (response) {
-            this.emit("editPassword", {success: true, message: "Password successfully modified"});
-        } else {
-            this.emit("editPassword", {success: false, error: "The password is incorrect"});
-        }
-        return response;
+        if (response.success)
+            return {success: true, message: "Password successfully modified"};
+
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_PASSWORD)};
     }
 
     async logout() {
-        const response = await this._request("POST", "/api/user/disconnect");
-        this._user = null;
-        this._accessToken = null;
-        this._refreshToken = null;
+        await this._request("POST", "api/user/disconnect");
+        this._reset();
+    }
 
-        this._clearLocalStorage();
+    async delete() {
+        const response = await this._request("DELETE", `api/user/me`);
+        if (response.success) {
+            this._reset();
+            return {success: true, message: "User successfully deleted."};
+        }
 
-        this.emit("logout", response);
-        return response;
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.DELETE)};
     }
 
     async resetPassword(data) {
-        const response = await this._request("POST", "/api/user/resetPassword", data);
-        this.emit("resetPassword", response);
-        return response;
+        const response = await this._request("POST", "api/user/resetPassword", data);
+        if (response.success)
+            return {success: true, message: "Password successfully reset."};
+
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.RESET_PASSWORD)};
     }
 
     async refreshAccessToken() {
-        const response = await this._request("POST", "/api/user/refreshToken", null, this._refreshToken);
+        const response = await this._request("POST", "api/user/refreshToken", null, this._refreshToken);
         if (response) {
             this._accessToken = response.accessToken;
             localStorage.setItem("accessToken", this._accessToken);
         }
-        this.emit("refreshAccessToken", response);
         return response;
     }
 
     async _request(method, endpoint, body = null, token = this._accessToken) {
         const headers = {"Content-Type": "application/json"};
-        if (token) {
+        if (token)
             headers["Authorization"] = `Bearer ${token}`;
-        }
 
         const options = {
             method,
@@ -143,18 +169,22 @@ export class UserService {
         };
 
         try {
-            const response = await fetch(`http://${window.location.hostname}${endpoint}`, options);
+            const response = await fetch(`${window.location}${endpoint}`, options);
+            const data = await response.json().catch(() => null);
             if (response.status === 498) {
                 await this.refreshAccessToken();
                 return this._request(method, endpoint, body, this._accessToken);
             }
-            const data = response.ok ? await response.json() : null;
-            this.emit("apiResponse", {endpoint, success: response.ok, data});
-            return data;
+
+            if (!response.ok)
+                return {success: false, status: response.status};
+
+            return {success: true, data};
         } catch (error) {
-            console.error("API request error:", error);
-            this.emit("apiError", {endpoint, error});
-            return null;
+            if (error.name === "TypeError" || error.message === "Failed to fetch")
+                return {success: false, status: 503};
+
+            return {success: false, status: 500};
         }
     }
 
@@ -168,5 +198,13 @@ export class UserService {
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+    }
+
+    _reset() {
+        this._user = null;
+        this._accessToken = null;
+        this._refreshToken = null;
+
+        this._clearLocalStorage();
     }
 }

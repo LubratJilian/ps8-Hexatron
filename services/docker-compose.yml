@@ -37,6 +37,7 @@ services:
     networks:
       - network-services
     environment:
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
       - URI=${URI_DATABASE_USER_SERVICE}
       - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
       - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
@@ -49,7 +50,7 @@ services:
       database-initializer:
         condition: service_completed_successfully
     healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8003/health" ]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8003/api/user/health" ]
       interval: 10s
       retries: 5
       start_period: 20s

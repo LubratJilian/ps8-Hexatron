@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-COPY ./index.js /app/index.js
+COPY ./*.js /app/
 
 EXPOSE 8003
 CMD ["npm", "start"]

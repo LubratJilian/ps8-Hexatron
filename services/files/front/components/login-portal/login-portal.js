@@ -1,6 +1,7 @@
 import {SubmitButton} from "../submit-button/submit-button.js";
 import {UserService} from "../../services/user-service.js";
 import {BaseAuth} from "../base-auth/base-auth.js";
+import {DRAWER_CONTENT} from "../drawer-menu/drawer-menu.js";
 
 export class LoginPortal extends BaseAuth {
     constructor() {
@@ -12,28 +13,20 @@ export class LoginPortal extends BaseAuth {
     async connectedCallback() {
         await super.connectedCallback();
 
-
-        this._loginHandler = (data) => {
-            if (data.success) {
-                this.dispatchEvent(new CustomEvent("changeContent", {
-                    bubbles: true,
-                    composed: true,
-                    detail: "profile",
-                }));
-            } else alert(data.error);
-        };
-
-        UserService.getInstance().on("login", this._loginHandler);
         const actionLinks = this.shadowRoot.querySelectorAll("[data-action]");
         actionLinks.forEach(link => {
             this.addAutoCleanListener(link, "click", (event) => this.handleActionClick(event));
         });
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-
-        UserService.getInstance().off("login", this._loginHandler);
+    _loginHandler(data) {
+        if (data.success) {
+            this.dispatchEvent(new CustomEvent("changeContent", {
+                bubbles: true,
+                composed: true,
+                detail: DRAWER_CONTENT.PROFILE,
+            }));
+        } else alert(data.error);
     }
 
     handleActionClick(event) {
@@ -48,6 +41,7 @@ export class LoginPortal extends BaseAuth {
     }
 
     handleSubmit() {
-        UserService.getInstance().login(this.getFormData());
+        UserService.getInstance().login(this.getFormData())
+            .then((data) => this._loginHandler(data));
     }
 }

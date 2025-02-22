@@ -34,3 +34,9 @@ img {
     align-items: center;
     margin-bottom: 2rem;
 }
+
+#buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}

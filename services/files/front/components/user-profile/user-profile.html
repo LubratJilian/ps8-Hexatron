@@ -2,8 +2,8 @@
     <img alt="Profile picture" id="profile-picture" src="../../assets/profile.svg">
 
     <div class="inline" id="username-div">
-        <form-input id="username-input" maxlength="20" placeholder="Enter your username" required
-                    type="text"></form-input>
+        <form-input id="username-input" maxlength="20" minlength="4" pattern="^[a-zA-Z0-9_\-]+$"
+                    placeholder="Enter your username" required type="text"></form-input>
         <h1 id="username"></h1>
         <image-button alt="Edit username" id="edit-username" src="/assets/edit.svg"></image-button>
     </div>
@@ -11,15 +11,19 @@
     <h2>Password</h2>
     <div class="inline" id="password-div">
         <div id="password-inputs">
-            <form-input id="current-password-input" label="Current Password" placeholder="Enter your current password"
+            <form-input id="current-password" label="Current Password" placeholder="Enter your current password"
                         required type="password"></form-input>
-            <form-input id="new-password-input" label="New Password" placeholder="Enter your new password" required
-                        type="password"></form-input>
-            <form-input id="confirm-password-input" label="Confirm Password" placeholder="Confirm your new password"
+            <form-input id="password" label="New Password" maxlength="64" minlength="8"
+                        placeholder="Enter your new password"
+                        required type="password"></form-input>
+            <form-input id="confirm-password" label="Confirm Password" placeholder="Confirm your new password"
                         required type="password"></form-input>
         </div>
-        <h1 id="password">.........</h1>
+        <h1 id="password-display">.........</h1>
         <image-button alt="Edit password" id="edit-password" src="/assets/edit.svg"></image-button>
     </div>
-    <custom-button id="logout">Log out</custom-button>
+    <div id="buttons">
+        <custom-button id="logout">Log out</custom-button>
+        <custom-button id="delete">Delete account</custom-button>
+    </div>
 </div>
