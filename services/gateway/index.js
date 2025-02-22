@@ -7,7 +7,7 @@ const {io: Client} = require('socket.io-client');
 const {addCors} = require("./cors");
 
 // We will need a proxy to send requests to the other services.
-const publicRoutes = ["login", "register"];
+const publicRoutes = ["login", "register", "resetPassword"];
 const jwtAccessSecretKey = process.env.ACCESS_TOKEN_SECRET;
 const jwtRefreshSecretKey = process.env.REFRESH_TOKEN_SECRET;
 const proxy = httpProxy.createProxyServer();

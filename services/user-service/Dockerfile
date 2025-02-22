@@ -7,7 +7,7 @@ COPY ./user-service/package*.json ./
 
 RUN npm install
 
-COPY ./user-service/index.js ./index.js
+COPY ./user-service/*.js ./
 
 COPY ./api-utils /app/api-utils
 
