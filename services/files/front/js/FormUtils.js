@@ -1,19 +1,35 @@
-export function checkConfirmPassword(confirmElement, passwordValue, confirmPassword) {
-    const isValid = passwordValue === confirmPassword;
-    updateErrorMessage(confirmElement, !isValid, "Passwords don't match");
+export function checkConfirmPassword(inputs) {
+    let isValid = true;
+    const confirmPasswordInput = inputs.find(input => input.id === "confirm-password");
+
+    if (confirmPasswordInput) {
+        const passwordInput = inputs.find(input => input.id === "password");
+        console.log(passwordInput);
+        if (passwordInput) {
+            isValid = getFormInputValue(passwordInput) === getFormInputValue(confirmPasswordInput);
+            updateErrorMessage(confirmPasswordInput, !isValid, "Passwords don't match");
+        }
+    }
+
     return isValid;
 }
 
+function getFormInputValue(formInput) {
+    return formInput.shadowRoot.querySelector("input").value;
+}
+
 export function checkInputsValidity(inputs) {
-    const requiredInputs = Array.from(inputs).filter(input => input.hasAttribute("required"));
-    const minLengthInputs = Array.from(inputs).filter(input => input.hasAttribute("minlength"));
-    const patternInputs = Array.from(inputs).filter(input => input.hasAttribute("pattern"));
+    const inputsArray = Array.from(inputs);
+    const requiredInputs = inputsArray.filter(input => input.hasAttribute("required"));
+    const minLengthInputs = inputsArray.filter(input => input.hasAttribute("minlength"));
+    const patternInputs = inputsArray.filter(input => input.hasAttribute("pattern"));
 
     const isRequiredValid = checkRequired(requiredInputs);
     const isMinLengthValid = checkMinLengthInputs(minLengthInputs);
     const isPatternValid = checkPatternInputs(patternInputs);
+    const isConfirmPasswordValid = checkConfirmPassword(inputsArray);
 
-    return isRequiredValid && isMinLengthValid && isPatternValid;
+    return isRequiredValid && isMinLengthValid && isPatternValid && isConfirmPasswordValid;
 }
 
 function updateErrorMessage(input, hasError, message) {

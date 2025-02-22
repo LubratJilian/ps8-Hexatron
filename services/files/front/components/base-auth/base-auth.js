@@ -36,7 +36,8 @@ export class BaseAuth extends Component {
     }
 
     checkValidity() {
-        return checkInputsValidity(this.getFormInputs());
+        const formInputs = this.getFormInputs();
+        return checkInputsValidity(formInputs);
     }
 
     handleSubmit() {

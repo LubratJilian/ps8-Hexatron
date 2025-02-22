@@ -3,7 +3,7 @@ import {FormInput} from "../form-input/form-input.js";
 import {SubmitButton} from "../submit-button/submit-button.js";
 import {ImageButton} from "../image-button/image-button.js";
 import {BaseAuth} from "../base-auth/base-auth.js";
-import {checkConfirmPassword, checkInputsValidity, getInputsData} from "../../js/FormUtils.js";
+import {checkInputsValidity, getInputsData} from "../../js/FormUtils.js";
 
 export class UserProfile extends BaseAuth {
     static SELECTORS = {
@@ -16,11 +16,11 @@ export class UserProfile extends BaseAuth {
         USERNAME_DIV: "username-div",
         PASSWORD_DIV: "password-div",
         PASSWORD_INPUTS_DIV: "password-inputs",
-        PASSWORD: "password",
+        PASSWORD: "password-display",
         EDIT_PASSWORD: "edit-password",
-        CURRENT_PASSWORD_INPUT: "current-password-input",
-        NEW_PASSWORD_INPUT: "new-password-input",
-        CONFIRM_PASSWORD_INPUT: "confirm-password-input"
+        CURRENT_PASSWORD_INPUT: "current-password",
+        NEW_PASSWORD_INPUT: "password",
+        CONFIRM_PASSWORD_INPUT: "confirm-password"
     };
 
     constructor() {
@@ -120,15 +120,11 @@ export class UserProfile extends BaseAuth {
             if (this.checkInputs(UserProfile.SELECTORS.PASSWORD_DIV)) {
                 const inputs = this.getInputs(`#${UserProfile.SELECTORS.PASSWORD_DIV} form-input`);
                 const inputsData = getInputsData(inputs);
-
-                if (checkConfirmPassword(this._elements.CONFIRM_PASSWORD_INPUT,
-                    inputsData["new-password-input"], inputsData["confirm-password-input"])) {
-                    const data = await UserService.getInstance().updatePassword(
-                        inputsData["current-password-input"],
-                        inputsData["confirm-password-input"]
-                    );
-                    this._handlePasswordChange(data, inputs);
-                }
+                const data = await UserService.getInstance().updatePassword(
+                    inputsData["current-password"],
+                    inputsData["confirm-password"]
+                );
+                this._handlePasswordChange(data, inputs);
             }
         }
     }
