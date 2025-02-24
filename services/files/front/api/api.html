@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <meta content="SwaggerUI" name="description"/>
+    <title>SwaggerUI</title>
+    <link href="/doc/swagger-ui.css" rel="stylesheet"/>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script crossorigin src="/doc/swagger-ui-bundle.js"></script>
+<script>
+    window.ui = SwaggerUIBundle({
+        url: window.location.origin + "/api/api.json",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        presets: [
+            SwaggerUIBundle.presets.apis
+        ],
+        supportedSubmitMethods: [],
+        layout: "BaseLayout"
+    });
+</script>
+</body>
+</html>

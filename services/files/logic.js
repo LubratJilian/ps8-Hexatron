@@ -4,6 +4,7 @@ const url = require('url');
 const fs = require('fs');
 // path is used only for its parse method, which creates an object containing useful information about the path.
 const path = require('path');
+const swaggerUiPath = require("swagger-ui-dist").absolutePath();
 
 // We will limit the search of files in the front folder (../../front from here).
 // Note that fs methods consider the current folder to be the one where the app is run, that's why we don't need the "../.." before front.
@@ -34,14 +35,21 @@ const mimeTypes = {
 
 // Main method, exported at the end of the file. It's the one that will be called when a file is requested.
 function manageRequest(request, response) {
-    // First let's parse the URL, extract the path, and parse it into an easy-to-use object.
-    // We add the baseFrontPath at the beginning to limit the places to search for files.
-    const parsedUrl = url.parse(baseFrontPath + request.url);
-    let pathName = `.${parsedUrl.pathname}`;
-    let extension = path.parse(pathName).ext;
+    let pathName, extension;
+    if (request.url.startsWith("/doc")) {
+        pathName = path.join(swaggerUiPath, request.url.replace("/doc", ""));
+        pathName = pathName.replace(/^\/app\//, "./");
+        extension = path.parse(pathName).ext;
+    } else {
+        // First let's parse the URL, extract the path, and parse it into an easy-to-use object.
+        // We add the baseFrontPath at the beginning to limit the places to search for files.
+        const parsedUrl = url.parse(baseFrontPath + request.url);
+        pathName = `.${parsedUrl.pathname}`;
+        extension = path.parse(pathName).ext;
+    }
     // Uncomment the line below if you want to check in the console what url.parse() and path.parse() create.
     //console.log(parsedUrl, pathName, path.parse(pathName));
-
+    console.log(pathName, extension, request.url);
     // Let's check if the file exists.
     fs.exists(pathName, async function (exist) {
         if (!exist) {

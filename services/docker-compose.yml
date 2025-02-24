@@ -21,7 +21,7 @@ services:
 
   database-initializer:
     build:
-      context: ./database/
+      context: ./database-initializer/
       network: host
     networks:
       - network-services
