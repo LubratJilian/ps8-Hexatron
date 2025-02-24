@@ -9,7 +9,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
-      - ./database/mongodb:/data/db
+      - ./mongodb:/data/db
     expose:
       - "27017"
     healthcheck:
@@ -20,7 +20,9 @@ services:
       timeout: 5s
 
   database-initializer:
-    build: ./database/
+    build:
+      context: ./database/
+      network: host
     networks:
       - network-services
     environment:
@@ -33,7 +35,9 @@ services:
         condition: service_healthy
 
   user-service:
-    build: ./user-service/
+    build:
+      context: ./user-service/
+      network: host
     networks:
       - network-services
     environment:
@@ -57,7 +61,9 @@ services:
       timeout: 5s
 
   game-service:
-    build: ./game-service/
+    build:
+      context: ./game-service/
+      network: host
     networks:
       - network-services
     expose:
@@ -76,7 +82,9 @@ services:
       timeout: 5s
 
   files:
-    build: ./files/
+    build:
+      context: ./files/
+      network: host
     networks:
       - network-services
     expose:
@@ -92,7 +100,9 @@ services:
       timeout: 5s
 
   gateway:
-    build: ./gateway/
+    build:
+      context: ./gateway/
+      network: host
     networks:
       - network-services
     ports:
