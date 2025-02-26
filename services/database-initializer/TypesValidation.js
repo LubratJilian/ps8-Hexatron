@@ -55,5 +55,50 @@ const RefreshToken = {
     }
 };
 
+
+const bsonToJsonMap = new Map([
+    ["double", "number"],
+    ["string", "string"],
+    ["object", "object"],
+    ["array", "array"],
+    ["binData", "string"],
+    ["objectId", "string"],
+    ["bool", "boolean"],
+    ["date", "string"],
+    ["null", "null"],
+    ["regex", "string"],
+    ["javascript", "string"],
+    ["int", "number"],
+    ["long", "number"],
+    ["decimal128", "string"],
+    ["timestamp", "string"],
+    ["undefined", "null"],
+    ["symbol", "string"],
+    ["minKey", null],
+    ["maxKey", null]
+]);
+
+/**
+ * Function to convert MongoDB schema to JSON
+ * @param {Object} schema - MongoDB schema
+ * @returns {Object} - JSON schema for Swagger documentation
+ */
+function convertBsonToSwagger(schema) {
+    console.log(schema);
+    let swaggerSchema = {};
+    for (let key in schema) {
+        if (key === "bsonType") {
+            swaggerSchema["type"] = bsonToJsonMap.get(schema[key]) || "string";
+        } else if (typeof schema[key] === "object") {
+            swaggerSchema[key] = convertBsonToSwagger(schema[key]);
+        } else {
+            swaggerSchema[key] = schema[key];
+        }
+    }
+    return swaggerSchema;
+}
+
 exports.User = User;
 exports.RefreshToken = RefreshToken;
+exports.UserJson = convertBsonToSwagger(User);
+exports.RefreshToken = convertBsonToSwagger(RefreshToken);

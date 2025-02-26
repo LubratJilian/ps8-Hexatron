@@ -15,7 +15,7 @@ http.createServer(function (request, response) {
 
     request.on("end", () => {
       console.log(`File received: ${file}`);
-      fs.writeFile("./front/api/api.json", file, (error) => {
+      fs.writeFile("./front/api.json", file, (error) => {
         if (error) {
           console.error(`Error creating the file: ${file}`, error);
           response.writeHead(400, {"Content-Type": "application/json"});

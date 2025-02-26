@@ -50,7 +50,7 @@ const server = http.createServer(function (request, response) {
         // If the URL starts by /api, then it's a REST request (you can change that if you want).
         if (filePath[1] === "api") {
             if (filePath[2] === "doc") {
-                request.url = process.env.FILES_URL + "/api/api.html";
+                request.url = process.env.FILES_URL + "/api.html";
                 proxy.web(request, response, {target: process.env.FILES_URL});
             } else if (filePath[2] === "user") {
                 if (request.method === "OPTIONS") {

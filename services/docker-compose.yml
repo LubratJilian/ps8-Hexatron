@@ -48,6 +48,7 @@ services:
       - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
       - DB_NAME=${DB_NAME}
       - UTILS_API=${UTILS_API}
+      - USER_API=${USER_API}
     expose:
       - "8003"
     depends_on:
@@ -129,7 +130,7 @@ services:
     expose:
       - "8004"
     environment:
-      - SERVICES_URL=${USER_SERVICE_URL}
+      - SERVICES_URL=${USER_SERVICE_URL}/api/user
       - DOC_API_SERVICE_URL=${DOC_API_SERVICE_URL}
       - FILES_URL=${FILES_URL}
     depends_on:

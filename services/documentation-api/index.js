@@ -7,7 +7,7 @@ let mergedDocOptions = {
         version: "1.0.0"
     },
     paths: {},
-    components: {},
+    components: {schemas: {}},
     basePath: "/api"
 };
 
@@ -45,13 +45,16 @@ async function mergeDocs(serviceUrls) {
             if (Object.keys(doc).length !== 0)
                 Object.assign(mergedDocOptions.paths, doc.paths);
             if (doc.components) {
-                for (let [key, value] of Object.entries(doc.components)) {
-                    mergedDocOptions.components[key] = {
-                        ...mergedDocOptions.components[key],
-                        ...value
-                    };
+                for (let [key, value] of Object.entries(doc.components.schemas)) {
+                    if (!(key in mergedDocOptions.components.schemas)) {
+                        mergedDocOptions.components.schemas[key] = {
+                            ...mergedDocOptions.components.schemas[key],
+                            ...value
+                        };
+                    }
                 }
             }
+            console.log(`Documentation of ${url} received: ${doc}`);
         } catch (error) {
             console.error(`Error during retrieval of ${url}`, error);
         }
