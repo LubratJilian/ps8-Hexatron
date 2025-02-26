@@ -1,6 +1,8 @@
 const {createServer} = require("node:http");
 const controller = require("./controller");
 const {parseRequestPath, HttpError} = require("./utils");
+const {generateDocumentationAPI} = require("api");
+const {UserJson} = require("../database-initializer/TypesValidation");
 
 function handleError(req, res, error) {
     console.error(`[${new Date().toISOString()}] [${req.method}] ${req.url} - Error:`, error);
@@ -9,6 +11,44 @@ function handleError(req, res, error) {
     const message = statusCode === 500 ? "Internal Server Error" : error.message;
     res.writeHead(statusCode, {"Content-Type": "application/json"});
     res.end(JSON.stringify({error: message}));
+}
+
+const options = {
+    definition: {
+        openapi: "3.0.0",
+        info: {
+            title: "API Documentation",
+            version: "1.0.0"
+        },
+        servers: [
+            {
+                url: "http://user-service:8003",
+                description: "User Service"
+            }
+        ],
+        basePath: "/api/user",
+        components: {
+            schemas: {
+                user: {
+                    type: "object",
+                    properties: UserJson,
+                    example: {
+                        name: "Test1234",
+                        parameters: "Test",
+                        password: "ThisIsATest",
+                        answers: ["test", "test", "test"]
+                    }
+                }
+            }
+        }
+    },
+    apis: ["./route.js"]
+};
+console.log(UserJson);
+try {
+    generateDocumentationAPI(process.env.USER_API, options);
+} catch (error) {
+    console.error(`Error during the creation of API documentation: ${error}`);
 }
 
 function parseRequestBody(request) {
@@ -30,12 +70,39 @@ function parseRequestBody(request) {
     });
 }
 
-
 const routes = [
     {
+        /**
+         * @swagger
+         * /api/user/register:
+         *   post:
+         *     summary: Register a new user
+         *     description: Create a new user in the database
+         *     requestBody:
+         *       description: Les informations de l'utilisateur à enregistrer
+         *       required: true
+         *       content:
+         *         application/json:
+         *           schema:
+         *            $ref: '#/components/schemas/user'
+         *     responses:
+         *       201:
+         *         description: User successfully registered.
+         *       409:
+         *         description: Username already exists
+         *       400:
+         *         description: Invalid user data format
+         *       500:
+         *         description: Internal Server Error
+         */
         method: "POST",
         path: ["register"],
         handler: controller.register,
+    },
+    {
+        method: "GET",
+        path: ["doc"],
+        handler: controller.documentation
     },
     {
         method: "POST",

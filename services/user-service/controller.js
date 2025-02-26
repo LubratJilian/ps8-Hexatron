@@ -4,6 +4,7 @@ const {
 } = require("./database");
 const bcrypt = require("bcrypt");
 const {HttpError, convertToString, DATABASE_ERRORS} = require("./utils");
+const {readData} = require("../api-utils/api-utils");
 const saltRounds = 10;
 
 async function hashPassword(password) {
@@ -202,4 +203,20 @@ exports.delete = async (req, res) => {
 exports.health = async (req, res) => {
     res.writeHead(204);
     res.end();
+};
+
+exports.documentation = async (req, res) => {
+    try {
+        res.writeHead(200, {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        });
+        res.end(readData(process.env.USER_API));
+    } catch (error) {
+        res.writeHead(500, {"Content-Type": "application/json"});
+        res.end(JSON.stringify({
+            error: "Failed to read API documentation",
+            details: error.message
+        }));
+    }
 };
