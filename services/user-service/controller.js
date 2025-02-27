@@ -161,7 +161,7 @@ exports.refreshToken = async (req, res) => {
             throw error;
 
         if (error.message === DATABASE_ERRORS.TOKEN_NOT_FOUND)
-            throw new HttpError(401, "No refresh token found. Please login again");
+            throw new HttpError(401, "No refresh token found. Please log in again");
         if (error.message === DATABASE_ERRORS.TOKEN_GENERATION_FAILED)
             throw new HttpError(500, "Failed to generate new access token");
 
@@ -175,7 +175,7 @@ exports.disconnect = async (req, res) => {
         await deleteToken(userID);
 
         res.writeHead(204, {"Content-Type": "application/json"});
-        res.end();
+        res.end(JSON.stringify({message: "User has been successfully disconnected."}));
     } catch (error) {
         if (error instanceof HttpError)
             throw error;
@@ -189,9 +189,9 @@ exports.delete = async (req, res) => {
     try {
         const userID = getIDInRequest(req);
         await deleteUserByID(userID);
-
+        //TODO disconnect the user if connected
         res.writeHead(204, {"Content-Type": "application/json"});
-        res.end();
+        res.end(JSON.stringify({message: "User has been successfully deleted."}));
     } catch (error) {
         if (error.message === DATABASE_ERRORS.USER_NOT_FOUND)
             throw new HttpError(404, "User not found");

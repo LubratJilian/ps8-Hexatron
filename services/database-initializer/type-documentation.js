@@ -1,3 +1,4 @@
+/* TYPE DEFINITION */
 const Parameters = {
     bsonType: "object",
     properties: {
@@ -55,7 +56,15 @@ const RefreshToken = {
     }
 };
 
+/* EXAMPLES */
+const userExample = {
+    name: "Champion39",
+    parameters: "parameters",
+    password: "password1234",
+    answers: ["Lacroix", "Rennes", "Mars attack"]
+};
 
+/* UTILS */
 const bsonToJsonMap = new Map([
     ["double", "number"],
     ["string", "string"],
@@ -98,7 +107,7 @@ function convertBsonToSwagger(schema) {
     return swaggerSchema;
 }
 
+/* EXPORTS */
 exports.User = User;
+exports.Parameters = Parameters;
 exports.RefreshToken = RefreshToken;
-exports.UserJson = convertBsonToSwagger(User);
-exports.RefreshToken = convertBsonToSwagger(RefreshToken);

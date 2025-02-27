@@ -11,6 +11,16 @@
 <div id="swagger-ui"></div>
 <script crossorigin src="/doc/swagger-ui-bundle.js"></script>
 <script>
+    const HideSchemasPlugin = function () {
+        return {
+            components: {
+                SchemesContainer: () => null,
+                Models: () => null,
+                ModelWrapper: () => null
+            }
+        };
+    };
+
     window.ui = SwaggerUIBundle({
         url: window.location.origin + "/api.json",
         dom_id: "#swagger-ui",
@@ -18,6 +28,7 @@
         presets: [
             SwaggerUIBundle.presets.apis
         ],
+        plugins: [HideSchemasPlugin],
         supportedSubmitMethods: [],
         layout: "BaseLayout"
     });

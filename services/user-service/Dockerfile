@@ -10,7 +10,7 @@ RUN npm install
 RUN cd /app/api-utils && npm install
 
 COPY ./user-service/*.js ./
-COPY ../database-initializer/TypesValidation.js /app/database-initializer/
+COPY ../database-initializer/type-documentation.js /app/database-initializer/
 
 EXPOSE 8003
 CMD ["npm", "start"]

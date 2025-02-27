@@ -1,13 +1,14 @@
 const http = require("http");
 
-let mergedDocOptions = {
+let mergedDoc = {
     openapi: "3.0.0",
     info: {
         title: "API Documentation",
         version: "1.0.0"
     },
+    tags: {},
     paths: {},
-    components: {schemas: {}},
+    components: {schemas: {}, parameters: {}},
     basePath: "/api"
 };
 
@@ -42,18 +43,23 @@ async function mergeDocs(serviceUrls) {
     for (let url of serviceUrls) {
         try {
             let doc = await fetchApiDoc(url + "/doc");
-            if (Object.keys(doc).length !== 0)
-                Object.assign(mergedDocOptions.paths, doc.paths);
+            if (Object.keys(doc).length !== 0) {
+                Object.assign(mergedDoc.tags, doc.tags);
+                Object.assign(mergedDoc.paths, doc.paths);
+            }
             if (doc.components) {
                 for (let [key, value] of Object.entries(doc.components.schemas)) {
-                    if (!(key in mergedDocOptions.components.schemas)) {
-                        mergedDocOptions.components.schemas[key] = {
-                            ...mergedDocOptions.components.schemas[key],
-                            ...value
-                        };
+                    if (!(key in mergedDoc.components.schemas)) {
+                        mergedDoc.components.schemas[key] = value;
+                    }
+                }
+                for (let [key, value] of Object.entries(doc.components.parameters)) {
+                    if (!(key in mergedDoc.components.parameters)) {
+                        mergedDoc.components.parameters[key] = value;
                     }
                 }
             }
+            console.log(mergedDoc.components.schemas);
             console.log(`Documentation of ${url} received: ${doc}`);
         } catch (error) {
             console.error(`Error during retrieval of ${url}`, error);
@@ -64,7 +70,7 @@ async function mergeDocs(serviceUrls) {
 async function sendDoc() {
     await mergeDocs(process.env.SERVICES_URL.split(","));
 
-    let documentation = JSON.stringify(mergedDocOptions);
+    let documentation = JSON.stringify(mergedDoc);
     const options = {
         method: "POST",
         headers: {
