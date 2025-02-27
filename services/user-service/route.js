@@ -112,7 +112,7 @@ const options = {
                         user: {
                             type: "object",
                             properties: userJson
-                        }
+                        },
                     },
                     example: createResponseExample("User successfully updated.", ["message", "user"])
                 },
@@ -190,7 +190,7 @@ function createResponseExample(message, fields = ["message", "user", "accessToke
         user: returnedUserExample,
         accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTMzMzYsImV4cCI6MTczOTIxNDIzNn0.2iIKH4d9dSnS7p9-8148MEHIBvgxTdTpl8JhJGHZYm0",
         refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTI2NzUsImV4cCI6MTczOTIxMzU3NX0.5ZPptwWS6TZ8CGqSpKB0pZ4vzMXYCPKrTWzKq-hJfP8"
-    }, fields);
+    }, fields)
     return {value: value};
 }
 
