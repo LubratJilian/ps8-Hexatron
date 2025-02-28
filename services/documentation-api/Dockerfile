@@ -7,7 +7,6 @@ COPY package*.json ./
 RUN npm install
 
 COPY ./index.js /app/index.js
-#COPY ../files/front/swagger-ui-dist/index.html /app/index.html
 
 RUN mkdir -p ./api
 
