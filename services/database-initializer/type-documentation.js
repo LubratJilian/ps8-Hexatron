@@ -56,14 +56,6 @@ const RefreshToken = {
     }
 };
 
-/* EXAMPLES */
-const userExample = {
-    name: "Champion39",
-    parameters: "parameters",
-    password: "password1234",
-    answers: ["Lacroix", "Rennes", "Mars attack"]
-}
-
 /* UTILS */
 const bsonToJsonMap = new Map([
     ["double", "number"],
@@ -107,15 +99,6 @@ function convertBsonToSwagger(schema) {
     return swaggerSchema;
 }
 
-const extractProperties = (obj, properties) => {
-    return properties.reduce((res, prop) => {
-        if (obj.hasOwnProperty(prop)) {
-            res[prop] = obj[prop];
-        }
-        return res;
-    }, {});
-};
-
 /* JSON */
 const userJson = convertBsonToSwagger(User);
 const refreshTokenJson = convertBsonToSwagger(RefreshToken);
@@ -128,13 +111,5 @@ exports.RefreshToken = RefreshToken;
 exports.userJson = userJson;
 exports.refreshTokenJson = refreshTokenJson;
 
-exports.returnedUser = extractProperties(userJson, ["name", "parameters"]);
-exports.connectionUser = extractProperties(userJson, ["name", "password"]);
-exports.partialUser = extractProperties(userJson, ["name", "parameters"]);
 
-exports.userExample = userExample;
-exports.returnedUserExample = extractProperties(userExample, ["name", "parameters"]);
-exports.connectionUserExample = extractProperties(userExample, ["name", "password"]);
-exports.partialUserExampleNameOnly = extractProperties(userJson, ["name"]);
-exports.partialUserExampleParametersOnly = extractProperties(userJson, ["parameters"]);
-exports.partialUserExample = extractProperties(userJson, ["name", "parameters"]);
+

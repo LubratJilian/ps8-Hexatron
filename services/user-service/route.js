@@ -2,18 +2,7 @@ const {createServer} = require("node:http");
 const controller = require("./controller");
 const {parseRequestPath, HttpError} = require("./utils");
 const {generateDocumentationAPI} = require("api");
-const {
-    userJson,
-    returnedUser,
-    connectionUser,
-    partialUser,
-    userExample,
-    partialUserExampleNameOnly,
-    partialUserExample,
-    partialUserExampleParametersOnly,
-    returnedUserExample,
-    connectionUserExample
-} = require("../database-initializer/type-documentation");
+const {options} = require("./api-utils");
 
 function handleError(req, res, error) {
     console.error(`[${new Date().toISOString()}] [${req.method}] ${req.url} - Error:`, error);
@@ -24,132 +13,6 @@ function handleError(req, res, error) {
     res.end(JSON.stringify({error: message}));
 }
 
-const options = {
-    definition: {
-        openapi: "3.0.0",
-        info: {
-            title: "API Documentation",
-            version: "1.0.0"
-        },
-        basePath: "/api/user",
-        tags: [{
-            name: "User service",
-            description: "Api of the user-service"
-        }],
-        components: {
-            parameters: {
-                AuthorizationHeader: {
-                    in: "header",
-                    name: "Authorization",
-                    required: true,
-                    description: "Bearer token for authentication",
-                    schema: {
-                        type: "string",
-                        example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    }
-                }
-            },
-
-            schemas: {
-                user: {
-                    type: "object",
-                    properties: userJson,
-                    example: userExample
-                },
-                returnedUser: {
-                    type: "object",
-                    properties: returnedUser,
-                    example: returnedUserExample
-                },
-                connectionUser: {
-                    type: "object",
-                    properties: connectionUser,
-                    example: connectionUserExample
-                },
-                partialUser: {
-                    type: "object",
-                    properties: partialUser,
-                    examples: {
-                        nameOnly: {
-                            value: partialUserExampleNameOnly
-                        },
-                        parametersOnly: {
-                            value: partialUserExampleParametersOnly
-                        },
-                        nameAndParameters: {
-                            value: partialUserExample
-                        }
-                    }
-                },
-                loginAndRegisterAnswer: {
-                    type: "object",
-                    properties: {
-                        message: {
-                            type: "string"
-                        },
-                        user: {
-                            type: "object",
-                            properties: returnedUser
-                        },
-                        accessToken: {
-                            type: "string"
-                        },
-                        refreshToken: {
-                            type: "string"
-                        }
-                    },
-                    examples: {
-                        creationExample: createResponseExample("User successfully registered."),
-                        loginExample: createResponseExample("User successfully logged in.")
-                    }
-                },
-                updateAnswer: {
-                    type: "object",
-                    properties: {
-                        message: {
-                            type: "string"
-                        },
-                        user: {
-                            type: "object",
-                            properties: userJson
-                        },
-                    },
-                    example: createResponseExample("User successfully updated.", ["message", "user"])
-                },
-                refreshToken: {
-                    type: "object",
-                    properties: {
-                        message: {
-                            type: "string"
-                        },
-                        accessToken: {
-                            type: "string"
-                        }
-                    },
-                    example: createResponseExample("New access token generated successfully.", ["message", "accessToken"])
-                },
-                resetPassword: {
-                    type: "object",
-                    properties: extractProperties(userJson, ["name", "answers", "password"]),
-                    example: extractProperties(userExample, ["name", "answers", "password"])
-                },
-                newPassword: {
-                    type: "object",
-                    properties: {
-                        oldPassword: userJson.password,
-                        newPassword: userJson.password
-                    },
-                    example: {
-                        oldPassword: "password1234",
-                        newPassword: "1234password"
-                    }
-                }
-            }
-        }
-    },
-    apis: ["./route.js"]
-};
-console.log(userJson, userExample);
 try {
     generateDocumentationAPI(process.env.USER_API, options);
 } catch (error) {
@@ -173,25 +36,6 @@ function parseRequestBody(request) {
 
         request.on("error", (error) => reject(error));
     });
-}
-
-function extractProperties(obj, properties) {
-    return properties.reduce((res, prop) => {
-        if (obj.hasOwnProperty(prop)) {
-            res[prop] = obj[prop];
-        }
-        return res;
-    }, {});
-}
-
-function createResponseExample(message, fields = ["message", "user", "accessToken", "refreshToken"]) {
-    let value = extractProperties({
-        message: message,
-        user: returnedUserExample,
-        accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTMzMzYsImV4cCI6MTczOTIxNDIzNn0.2iIKH4d9dSnS7p9-8148MEHIBvgxTdTpl8JhJGHZYm0",
-        refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTI2NzUsImV4cCI6MTczOTIxMzU3NX0.5ZPptwWS6TZ8CGqSpKB0pZ4vzMXYCPKrTWzKq-hJfP8"
-    }, fields)
-    return {value: value};
 }
 
 const routes = [
@@ -285,7 +129,7 @@ const routes = [
          *                 schema:
          *                   $ref: '#/components/schemas/loginAndRegisterAnswer'
          *                 examples:
-         *                   creationExample:
+         *                   loginExample:
          *                     $ref: '#/components/schemas/loginAndRegisterAnswer/examples/loginExample'
          *       401:
          *         description: Invalid credentials
@@ -313,14 +157,14 @@ const routes = [
          *       content:
          *         application/json:
          *           schema:
-         *            $ref: '#/components/schemas/partialUser'
+         *            $ref: '#/components/schemas/returnedUser'
          *           examples:
          *             nameOnly:
-         *                $ref: '#/components/schemas/partialUser/examples/nameOnly'
+         *                $ref: '#/components/schemas/returnedUser/examples/nameOnly'
          *             parametersOnly:
-         *                $ref: '#/components/schemas/partialUser/examples/parametersOnly'
+         *                $ref: '#/components/schemas/returnedUser/examples/parametersOnly'
          *             nameAndParameters:
-         *                $ref: '#/components/schemas/partialUser/examples/nameAndParameters'
+         *                $ref: '#/components/schemas/returnedUser/examples/default'
          *     responses:
          *       200:
          *         description: The response consists of an access token, a refresh token, and the user's data, excluding the ID, password, and answers.
