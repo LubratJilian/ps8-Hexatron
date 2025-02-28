@@ -8,7 +8,7 @@ let mergedDoc = {
     },
     tags: {},
     paths: {},
-    components: {schemas: {}, parameters: {}},
+    components: {},
     basePath: "/api"
 };
 
@@ -47,19 +47,16 @@ async function mergeDocs(serviceUrls) {
                 Object.assign(mergedDoc.tags, doc.tags);
                 Object.assign(mergedDoc.paths, doc.paths);
             }
-            if (doc.components) {
-                for (let [key, value] of Object.entries(doc.components.schemas)) {
-                    if (!(key in mergedDoc.components.schemas)) {
-                        mergedDoc.components.schemas[key] = value;
-                    }
+            for (let componentKey of Object.keys(doc.components)) {
+                if (!Object.hasOwnProperty(mergedDoc.components[componentKey])) {
+                    mergedDoc.components[componentKey] = {};
                 }
-                for (let [key, value] of Object.entries(doc.components.parameters)) {
-                    if (!(key in mergedDoc.components.parameters)) {
-                        mergedDoc.components.parameters[key] = value;
+                for (let [key, value] of Object.entries(doc.components[componentKey])) {
+                    if (!(key in mergedDoc.components[componentKey])) {
+                        mergedDoc.components[componentKey][key] = value;
                     }
                 }
             }
-            console.log(mergedDoc.components.schemas);
             console.log(`Documentation of ${url} received: ${doc}`);
         } catch (error) {
             console.error(`Error during retrieval of ${url}`, error);
