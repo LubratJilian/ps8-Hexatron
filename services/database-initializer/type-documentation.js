@@ -85,7 +85,6 @@ const bsonToJsonMap = new Map([
  * @returns {Object} - JSON schema for Swagger documentation
  */
 function convertBsonToSwagger(schema) {
-    console.log(schema);
     let swaggerSchema = {};
     for (let key in schema) {
         if (key === "bsonType") {

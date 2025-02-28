@@ -7,6 +7,9 @@ const userExample = {
     answers: ["Lacroix", "Rennes", "Mars attack"]
 };
 
+const accessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTMzMzYsImV4cCI6MTczOTIxNDIzNn0.2iIKH4d9dSnS7p9-8148MEHIBvgxTdTpl8JhJGHZYm0";
+const refreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTI2NzUsImV4cCI6MTczOTIxMzU3NX0.5ZPptwWS6TZ8CGqSpKB0pZ4vzMXYCPKrTWzKq-hJfP8";
+
 const extractProperties = (obj, properties) => {
     return properties.reduce((res, prop) => {
         if (obj.hasOwnProperty(prop)) {
@@ -20,8 +23,8 @@ function createResponseExample(message, fields = ["message", "user", "accessToke
     let value = extractProperties({
         message: message,
         user: extractProperties(userExample, ["name", "parameters"]),
-        accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTMzMzYsImV4cCI6MTczOTIxNDIzNn0.2iIKH4d9dSnS7p9-8148MEHIBvgxTdTpl8JhJGHZYm0",
-        refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTI2NzUsImV4cCI6MTczOTIxMzU3NX0.5ZPptwWS6TZ8CGqSpKB0pZ4vzMXYCPKrTWzKq-hJfP8"
+        accessToken: accessToken,
+        refreshToken: refreshToken
     }, fields);
     return {value: value};
 }
@@ -57,27 +60,27 @@ exports.options = {
                     properties: userJson,
                     example: userExample
                 },
-                returnedUser: {
+                returned_user: {
                     type: "object",
                     properties: extractProperties(userJson, ["name", "parameters"]),
                     examples: {
                         nameOnly: {
-                            value: extractProperties(userExample, ["name", "parameters"])
+                            value: extractProperties(userExample, ["name"])
                         },
                         parametersOnly: {
-                            value: extractProperties(userExample, ["name", "parameters"])
+                            value: extractProperties(userExample, ["parameters"])
                         },
                         default: {
                             value: extractProperties(userExample, ["name", "parameters"])
                         }
                     }
                 },
-                connectionUser: {
+                connection_user: {
                     type: "object",
                     properties: extractProperties(userJson, ["name", "password"]),
                     example: extractProperties(userExample, ["name", "password"])
                 },
-                loginAndRegisterAnswer: {
+                login_register_answer: {
                     type: "object",
                     properties: {
                         message: {
@@ -99,7 +102,7 @@ exports.options = {
                         loginExample: createResponseExample("User successfully logged in.")
                     }
                 },
-                updateAnswer: {
+                update_answer: {
                     type: "object",
                     properties: {
                         message: {
@@ -107,7 +110,7 @@ exports.options = {
                         },
                         user: {
                             type: "object",
-                            properties: userJson
+                            properties: extractProperties(userJson, ["name", "parameters"])
                         }
                     },
                     example: createResponseExample("User successfully updated.", ["message", "user"])
@@ -136,7 +139,7 @@ exports.options = {
                         newPassword: userJson.password
                     },
                     example: {
-                        oldPassword: "password1234",
+                        oldPassword: userExample.password,
                         newPassword: "1234password"
                     }
                 }

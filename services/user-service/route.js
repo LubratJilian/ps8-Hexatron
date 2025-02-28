@@ -61,10 +61,10 @@ const routes = [
          *         content:
          *             application/json:
          *                 schema:
-         *                   $ref: '#/components/schemas/loginAndRegisterAnswer'
+         *                   $ref: '#/components/schemas/login_register_answer'
          *                 examples:
          *                   creationExample:
-         *                     $ref: '#/components/schemas/loginAndRegisterAnswer/examples/creationExample'
+         *                     $ref: '#/components/schemas/login_register_answer/examples/creationExample'
          *       409:
          *         description: Username already exists
          *       400:
@@ -120,17 +120,17 @@ const routes = [
          *       content:
          *         application/json:
          *           schema:
-         *            $ref: '#/components/schemas/connectionUser'
+         *            $ref: '#/components/schemas/connection_user'
          *     responses:
          *       200:
          *         description: The response consists of an access token, a refresh token, and the user's data, excluding the ID, password, and answers.
          *         content:
          *             application/json:
          *                 schema:
-         *                   $ref: '#/components/schemas/loginAndRegisterAnswer'
+         *                   $ref: '#/components/schemas/login_register_answer'
          *                 examples:
          *                   loginExample:
-         *                     $ref: '#/components/schemas/loginAndRegisterAnswer/examples/loginExample'
+         *                     $ref: '#/components/schemas/login_register_answer/examples/loginExample'
          *       401:
          *         description: Invalid credentials
          *       500:
@@ -157,21 +157,21 @@ const routes = [
          *       content:
          *         application/json:
          *           schema:
-         *            $ref: '#/components/schemas/returnedUser'
+         *            $ref: '#/components/schemas/returned_user'
          *           examples:
          *             nameOnly:
-         *                $ref: '#/components/schemas/returnedUser/examples/nameOnly'
+         *                $ref: '#/components/schemas/returned_user/examples/nameOnly'
          *             parametersOnly:
-         *                $ref: '#/components/schemas/returnedUser/examples/parametersOnly'
+         *                $ref: '#/components/schemas/returned_user/examples/parametersOnly'
          *             nameAndParameters:
-         *                $ref: '#/components/schemas/returnedUser/examples/default'
+         *                $ref: '#/components/schemas/returned_user/examples/default'
          *     responses:
          *       200:
          *         description: The response consists of an access token, a refresh token, and the user's data, excluding the ID, password, and answers.
          *         content:
          *             application/json:
          *                 schema:
-         *                   $ref: '#/components/schemas/updateAnswer'
+         *                   $ref: '#/components/schemas/update_answer'
          *       409:
          *         description: Username already exists
          *       400:
