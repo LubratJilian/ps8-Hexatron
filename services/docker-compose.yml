@@ -21,7 +21,7 @@ services:
 
   database-initializer:
     build:
-      context: ./database/
+      context: ./database-initializer/
       network: host
     networks:
       - network-services
@@ -85,6 +85,7 @@ services:
     build:
       context: ./files/
       network: host
+      target: prod
     networks:
       - network-services
     expose:
