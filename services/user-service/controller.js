@@ -189,7 +189,6 @@ exports.delete = async (req, res) => {
     try {
         const userID = getIDInRequest(req);
         await deleteUserByID(userID);
-        //TODO disconnect the user if connected
         res.writeHead(204, {"Content-Type": "application/json"});
         res.end(JSON.stringify({message: "User has been successfully deleted."}));
     } catch (error) {
