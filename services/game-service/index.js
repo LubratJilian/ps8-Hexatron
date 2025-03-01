@@ -25,17 +25,14 @@ const io = new Server(server, {
     }
 });
 
-const activeGames = new Map(); // { gameId => { game-component: GameEngine, players: Set<socketId> } }
-const socketGameId = new Map(); // socketId -> gameId
+const activeGames = new Map(); // { gameEngineId => gameEngine }
+const socketToUser = new Map(); // socketId -> userId
 
 function handleEvent(gatewaySocket, gameId, eventName, eventData) {
     if (!activeGames.has(gameId))
         return;
 
-    gatewaySocket.emit(eventName, {
-        eventData,
-        room: Array.from(activeGames.get(gameId).room)
-    });
+    gatewaySocket.emit(eventName, eventData);
 
     if (eventName === "refreshStatus" && eventData.status === GAME_END)
         activeGames.delete(gameId);
@@ -66,46 +63,56 @@ function validateGameInput(data) {
     }
 }
 
-function sendError(socket, errorType, message, room = null) {
+function sendError(socket, errorType, message) {
     socket.emit("error", {
-        eventData: {
-            type: errorType,
-            message: message,
-        },
-        room
+        type: errorType,
+        message: message,
     });
 }
 
 io.on('connection', (gatewaySocket) => {
-    console.log('✅ Gateway connected to the Game Service');
+    console.log('✅ Gateway socket connected to the Game Service');
 
-    gatewaySocket.on('disconnect', () => {
-        console.log('❌ Gateway disconnected');
+    gatewaySocket.on("disconnecting", () => {
+        gatewaySocket.rooms.forEach((room) => {
+            const playerIds = socketToUser.get(gatewaySocket.id);
+            const game = activeGames.get(room);
+
+            if (!game || !playerIds)
+                return;
+
+            const leavingPlayers = Object.values(game.game.players)
+                .filter(gamePlayer => playerIds.includes(gamePlayer.id));
+
+            const gameEnd = leavingPlayers.reduce(
+                (gameEnd, player) => gameEnd || game.disconnectPlayer(player.id), false
+            );
+
+            if (gameEnd)
+                activeGames.delete(game.id);
+
+            socketToUser.delete(gatewaySocket.id);
+            gatewaySocket.broadcast.to(room).emit("userLeft", `${gatewaySocket.id} leaved the room`);
+        });
     });
 
-    gatewaySocket.on('leaveGame', (socketId) => {
-        const gameId = socketGameId.get(socketId);
-        const game = activeGames.get(gameId)?.game;
-
-        if (!game)
-            return;
-
-        const leavingPlayers = Object.values(game.game.players)
-            .filter(player => player.socketId === socketId);
-
-        const gameEnd = leavingPlayers.reduce(
-            (gameEnd, player) => gameEnd || game.disconnectPlayer(player.id), false
-        );
-
-        if (gameEnd)
-            activeGames.delete(gameId);
+    gatewaySocket.on('disconnect', () => {
+        console.log('❌ Gateway socket disconnected');
     });
 
     gatewaySocket.on("start", (data) => {
         try {
-            validateGameInput(data.args[0]);
-            const {gameType, rowNumber, columnNumber, roundsCount, playersCount, users} = data.args[0];
-            const players = users.map(user => new Player(user.id, user.name, data.socketId));
+            validateGameInput(data);
+            const {gameType, rowNumber, columnNumber, roundsCount, playersCount, users} = data;
+            const players = [];
+            const playerIds = [];
+
+            users.forEach(user => {
+                players.push(new Player(user.id, user.name));
+                playerIds.push(user.id);
+            });
+
+            socketToUser.set(gatewaySocket.id, playerIds);
 
             const newGame = new GameEngine(
                 players,
@@ -117,48 +124,41 @@ io.on('connection', (gatewaySocket) => {
                 (gameId, eventName, eventData) => handleEvent(gatewaySocket, gameId, eventName, eventData)
             );
 
-            activeGames.set(newGame.id, {
-                game: newGame,
-                room: new Set([data.socketId])
-            });
+            activeGames.set(newGame.id, newGame);
+            gatewaySocket.join(newGame.id);
 
-            socketGameId.set(data.socketId, newGame.id);
             newGame.start().then();
 
             gatewaySocket.emit("refreshStatus", {
-                eventData: {
-                    status: CREATED,
-                    data: {id: newGame.id, players: newGame.game.players}
-                },
-                room: [data.socketId]
+                status: CREATED,
+                data: {id: newGame.id, players: newGame.game.players}
             });
 
         } catch ({type, message}) {
-            console.log(type, message);
             sendError(
                 gatewaySocket,
                 type || ErrorTypes.GAME_CREATION_FAILED,
-                message,
-                [data.socketId]
+                message
             );
         }
     });
 
     gatewaySocket.on("nextMove", (data) => {
-        const {gameId, playerId, move} = data.args[0];
+        const {gameId, playerId, move} = data;
 
         if (!gameId || !playerId || move === undefined) {
             sendError(gatewaySocket, ErrorTypes.INVALID_INPUT, "Missing required move parameters");
             return;
         }
 
-        const gameData = activeGames.get(gameId);
-        if (!gameData) {
+        if (!activeGames.has(gameId)) {
             sendError(gatewaySocket, ErrorTypes.GAME_NOT_FOUND, "Game not found");
             return;
         }
 
-        const player = gameData.game.game.players[playerId];
+        const gameEngine = activeGames.get(gameId);
+
+        const player = gameEngine.game.players[playerId];
         if (!player) {
             sendError(gatewaySocket, ErrorTypes.PLAYER_NOT_FOUND, "Player not found");
             return;
