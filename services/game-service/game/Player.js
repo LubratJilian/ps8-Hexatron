@@ -4,10 +4,9 @@ const PlayerType = {
 };
 
 class Player {
-    constructor(id, name, socketId) {
+    constructor(id, name) {
         this._id = id;
         this._name = name;
-        this._socketId = socketId;
     }
 
     get playerType() {
@@ -20,10 +19,6 @@ class Player {
 
     get name() {
         return this._name;
-    }
-
-    get socketId() {
-        return this._socketId;
     }
 }
 
