@@ -2,11 +2,15 @@ FROM node:18-slim
 
 RUN apt-get update && apt-get install -y curl
 
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
+WORKDIR /app/user-service/
+COPY ./user-service/package*.json ./
+COPY ../api-utils/* /app/api-utils/
 
-COPY ./*.js /app/
+RUN npm install
+RUN cd /app/api-utils && npm install
+
+COPY ./user-service/*.js ./
+COPY ../database-initializer/type-documentation.js /app/database-initializer/
 
 EXPOSE 8003
 CMD ["npm", "start"]

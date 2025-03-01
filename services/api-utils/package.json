@@ -1,0 +1,11 @@
+{
+  "name": "api-utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "api-utils.js",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "swagger-jsdoc": "^6.2.8"
+  }
+}

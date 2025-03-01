@@ -1,5 +1,5 @@
 const {MongoClient} = require("mongodb");
-const {User, RefreshToken} = require("./TypesValidation.js");
+const {User, RefreshToken} = require("./type-documentation.js");
 const uri = process.env.URI;
 const client = new MongoClient(uri);
 const dbName = process.env.DB_NAME;
