@@ -84,44 +84,29 @@ const ioServer = new Server(server, {
     }
 });
 
-const gameServiceSocket = Client(process.env.GAME_SERVICE_URL);
-const gameNamespace = ioServer.of("/game");
-
 const servicesNamespaces = {
     Game: {
-        namespace: gameNamespace,
-        socket: gameServiceSocket,
+        nameSpacePath: "/game",
+        url: process.env.GAME_SERVICE_URL
     }
 };
 
-Object.entries(servicesNamespaces).forEach(([serviceName, service]) => {
-    const {namespace, socket} = service;
+Object.values(servicesNamespaces).forEach(({nameSpacePath, url}) => {
+    const nameSpace = ioServer.of(nameSpacePath);
+    nameSpace.on("connection", (clientSocket) => {
+        const socket = Client(url);
 
-    namespace.on("connection", (clientSocket) => {
         clientSocket.onAny((eventName, ...args) => {
-            socket.emit(eventName, {
-                socketId: clientSocket.id,
-                args
-            });
+            socket.emit(eventName, ...args);
         });
 
         clientSocket.on("disconnect", () => {
-            socket.emit(`leave${serviceName}`, clientSocket.id);
+            socket.disconnect();
         });
-    });
 
-    socket.onAny((eventName, data) => {
-        if (data.room) {
-            namespace.to(data.room).emit(eventName, data.eventData);
-        }
-    });
-
-    socket.on("connect", () => {
-        console.log(`✅ Gateway connected to ${serviceName} Service`);
-    });
-
-    socket.on("disconnect", () => {
-        console.log(`❌ Gateway disconnected from ${serviceName} Service`);
+        socket.onAny((eventName, ...args) => {
+            clientSocket.emit(eventName, ...args);
+        });
     });
 });
 
