@@ -114,31 +114,31 @@ io.on('connection', (gatewaySocket) => {
 
     gatewaySocket.on("joinGame", (gameParams) => {
         try {
-            const {users, gameType} = gameParams;
-            validateJoin(users, gameType, gatewaySocket);
+            const {players, gameType} = gameParams;
+            validateJoin(players, gameType, gatewaySocket);
 
-            const players = [];
+            const remotePlayers = [];
             const playerIds = [];
 
-            users.forEach(user => {
-                players.push(new RemotePlayer(user.id, user.name));
-                playerIds.push(user.id);
+            players.forEach(player => {
+                remotePlayers.push(new RemotePlayer(player.id, player.name));
+                playerIds.push(player.id);
             });
 
             socketToUser.set(gatewaySocket.id, playerIds);
             const gameIndex = pendingGames.findIndex(gameEngine =>
                 gameEngine.game.type === gameType &&
-                gameEngine.game.players.size + users.length <= gameEngine.playersCount
+                gameEngine.game.players.size + remotePlayers.length <= gameEngine.playersCount
             );
 
             let game;
             let isNewGame = false;
             if (gameIndex !== -1) {
                 game = pendingGames[gameIndex];
-                players.forEach(player => game.addPlayer(player));
+                remotePlayers.forEach(player => game.addPlayer(player));
             } else {
                 game = new GameEngine(
-                    players,
+                    remotePlayers,
                     gameType,
                     9,
                     16,
