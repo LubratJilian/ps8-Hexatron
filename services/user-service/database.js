@@ -90,7 +90,7 @@ async function addUser(newUser) {
 
     const userId = convertToString(result.insertedId);
     try {
-        const user = await getUserByID(userId, [USER_FIELDS.password, USER_FIELDS.answers, USER_FIELDS.id]);
+        const user = await getUserByID(userId, [USER_FIELDS.password, USER_FIELDS.answers]);
 
         const accessToken = generateToken(userId, true);
         const refreshToken = await generateRefreshToken(userId);
