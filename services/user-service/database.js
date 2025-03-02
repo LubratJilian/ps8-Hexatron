@@ -135,6 +135,7 @@ async function checkPassword(credential, enteredPwd, withID) {
 }
 
 async function updateUser(newUserData, userID) {
+    //TODO Verify for settings and understand the error of connection to the database
     const modification = await mongoOperation(() =>
         db.collection(userCollection).updateOne(
             {_id: convertToID(userID)},

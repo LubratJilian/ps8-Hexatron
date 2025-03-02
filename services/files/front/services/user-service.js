@@ -1,3 +1,5 @@
+import {User} from "../js/User.js";
+
 export const USER_ACTIONS = Object.freeze({
     LOGIN: "login",
     REGISTER: "register",
@@ -7,6 +9,11 @@ export const USER_ACTIONS = Object.freeze({
     LOGOUT: "logout",
     DELETE: "delete"
 });
+
+const defaultParameters = {
+    _keysPlayers: [["A", "Q", "E", "D"], ["U", "J", "O", "L"]],
+    _playersColors: ["#40ff00", "#ff0000"]
+};
 
 export class UserService {
     static _instance = null;
@@ -49,9 +56,14 @@ export class UserService {
     constructor() {
         if (UserService._instance) return UserService._instance;
 
-        this._user = JSON.parse(localStorage.getItem("user")) || null;
+        this._user = JSON.parse(localStorage.getItem("user")) || new User(0, "Player 1", "assets/profile.svg", defaultParameters);
         this._accessToken = localStorage.getItem("accessToken") || null;
         this._refreshToken = localStorage.getItem("refreshToken") || null;
+        this._connected = localStorage.getItem("connected") || false;
+
+        if (!this._connected) {
+            localStorage.setItem("user", JSON.stringify(this._user));
+        }
 
         UserService._instance = this;
     }
@@ -68,7 +80,7 @@ export class UserService {
     }
 
     isConnected() {
-        return this.user !== null;
+        return this._connected;
     }
 
     _getErrorMessage(status, action) {
@@ -83,6 +95,7 @@ export class UserService {
             this._user = data.user;
             this._accessToken = data.accessToken;
             this._refreshToken = data.refreshToken;
+            this._connected = true;
 
             this._saveToLocalStorage();
             return {success: true, user: data.user};
@@ -97,21 +110,29 @@ export class UserService {
             this._user = data.user;
             this._accessToken = data.accessToken;
             this._refreshToken = data.refreshToken;
+            this._connected = true;
+
             this._saveToLocalStorage();
             return {success: true, user: data.user};
         }
         return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.LOGIN)};
     }
 
-    async updateUsername(newUsername) {
-        const response = await this._request("PATCH", `api/user/me`, {name: newUsername});
-        if (response.success) {
-            const data = response.data;
-            this.user.name = data.user.name;
+    async updateUser(newData) {
+        console.log(this.isConnected());
+        if (this.isConnected()) {
+            const response = await this._request("PATCH", `api/user/me`, newData);
+            if (response.success) {
+                const data = response.data;
+                this.user = data.user;
+                localStorage.setItem("user", JSON.stringify(this._user));
+                return {success: true, newData: newData};
+            }
+            return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)};
+        } else {
+            Object.keys(newData).forEach(key => this.user[key] = newData[key]);
             localStorage.setItem("user", JSON.stringify(this._user));
-            return {success: true, username: data.user.name};
         }
-        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)};
     }
 
     async updatePassword(curPassword, newPassword) {
@@ -192,12 +213,14 @@ export class UserService {
         localStorage.setItem("user", JSON.stringify(this._user));
         localStorage.setItem("accessToken", this._accessToken);
         localStorage.setItem("refreshToken", this._refreshToken);
+        localStorage.setItem("connected", this._connected);
     }
 
     _clearLocalStorage() {
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+        localStorage.removeItem("connected");
     }
 
     _reset() {

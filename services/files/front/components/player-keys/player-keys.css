@@ -1,0 +1,26 @@
+.editable:hover {
+    fill: rgba(134, 134, 134, 0.5)
+}
+
+:host {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+}
+
+svg {
+    width: 15%;
+}
+
+p {
+    align-content: center;
+}
+
+text {
+    dominant-baseline: middle;
+    text-anchor: middle;
+    fill: black;
+    stroke: none;
+    pointer-events: none;
+}

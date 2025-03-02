@@ -4,22 +4,26 @@ import {UserService} from "../../services/user-service.js";
 import {UserProfile} from "../user-profile/user-profile.js";
 import {RegisterPortal} from "../register-portal/register-portal.js";
 import {ForgottenPasswordPortal} from "../forgotten-password-portal/forgotten-password-portal.js";
+import {SettingsPortal} from "../settings-portal/settings-portal.js";
 
 export const DRAWER_CONTENT = Object.freeze({
     PROFILE: "profile",
     REGISTER: "register",
-    FORGOT_PASSWORD: "forgottenPassword"
+    FORGOT_PASSWORD: "forgottenPassword",
+    SETTINGS: "settings"
 });
 
 export class DrawerMenu extends Component {
     constructor() {
         super();
 
+        this.previous = "";
         this._oppened = false;
         LoginPortal.register();
         UserProfile.register();
         RegisterPortal.register();
         ForgottenPasswordPortal.register();
+        SettingsPortal.register();
     }
 
     async connectedCallback() {
@@ -27,7 +31,7 @@ export class DrawerMenu extends Component {
 
         this.addAutoCleanListener(window, "openDrawer", (event) => {
             if (this.loadContent(event.detail.type))
-                this.nav();
+                this.nav(event.detail.type);
         });
 
         this.addAutoCleanListener(window, "changeContent", (event) => {
@@ -37,7 +41,7 @@ export class DrawerMenu extends Component {
         this.addAutoCleanListener(
             this.shadowRoot.getElementById("close-btn"),
             "click",
-            () => this.nav()
+            () => this.nav(this.previous)
         );
     }
 
@@ -54,6 +58,9 @@ export class DrawerMenu extends Component {
             case DRAWER_CONTENT.FORGOT_PASSWORD:
                 component = "<forgotten-password-portal></forgotten-password-portal>";
                 break;
+            case DRAWER_CONTENT.SETTINGS:
+                component = "<settings-portal></settings-portal>";
+                break;
             default:
                 console.warn("This type is not yet supported");
                 return false;
@@ -63,19 +70,22 @@ export class DrawerMenu extends Component {
         return true;
     }
 
-    nav() {
+    nav(type) {
         const sidenav = this.shadowRoot.getElementById("mySidenav");
         const closeBtn = this.shadowRoot.getElementById("close-btn");
 
-        if (this._oppened) {
+        if (this._oppened && this.previous === type) {
             closeBtn.style.visibility = "hidden";
             sidenav.classList.remove("open");
             this.shadowRoot.getElementById("content").innerHTML = "";
+            this._oppened = !this._oppened;
+
         } else {
             closeBtn.style.visibility = "visible";
             sidenav.classList.add("open");
+            this._oppened = true;
         }
-        this._oppened = !this._oppened;
+        this.previous = type;
     }
 
     disconnectedCallback() {
