@@ -2,6 +2,7 @@ import {Game, GameType} from "../js/game/Game.js";
 import {LocalPlayer} from "../js/game/LocalPlayer.js";
 import {UserService} from "./user-service.js";
 import {MovementTypes} from "../js/game/GameUtils.js";
+import {EventEmitter} from "../js/EventEmitter.js";
 
 export const GameStatus = {
     CREATED: 'CREATED',
@@ -10,10 +11,12 @@ export const GameStatus = {
     GAME_END: 'GAME_END',
 };
 
-export class GameService {
+export class GameService extends EventEmitter {
     static _instance = null;
 
     constructor() {
+        super();
+
         if (GameService._instance)
             return GameService._instance;
 
@@ -26,7 +29,6 @@ export class GameService {
             console.log("user connected " + this._socket.id);
         });
 
-        this._listeners = {};
         this.setupListeners();
 
         window.addEventListener("routeChange", () => this.handleRouteChange());
@@ -54,6 +56,10 @@ export class GameService {
         this.reset();
     }
 
+    isGameCreated() {
+        return this.game?.id != null;
+    }
+
     get game() {
         return this._game;
     }
@@ -67,31 +73,6 @@ export class GameService {
             GameService._instance = new GameService();
         }
         return GameService._instance;
-    }
-
-    off(eventName, callback) {
-        if (this._listeners[eventName]) {
-            this._listeners[eventName] = this._listeners[eventName].filter(
-                cb => cb !== callback
-            );
-
-            if (this._listeners[eventName].length === 0) {
-                delete this._listeners[eventName];
-            }
-        }
-    }
-
-    on(eventName, callback) {
-        if (!this._listeners[eventName]) {
-            this._listeners[eventName] = [];
-        }
-        this._listeners[eventName].push(callback);
-    }
-
-    emit(eventName, data) {
-        if (this._listeners[eventName]) {
-            this._listeners[eventName].forEach(callback => callback(data));
-        }
     }
 
     setupListeners() {
@@ -125,13 +106,14 @@ export class GameService {
     }
 
     handleGameCreated(data) {
-        this.emit(GameStatus.CREATED);
         this.game.id = data.id;
 
         this._shouldInvertPositions = Object.keys(data.players)[0] !== UserService.getInstance().user._id;
         this.game.players = this._shouldInvertPositions
             ? Object.fromEntries(Object.entries(data.players).reverse())
             : data.players;
+
+        this.emit(GameStatus.CREATED);
     }
 
     _invertPosition(position) {
@@ -170,29 +152,30 @@ export class GameService {
     }
 
     handleGameEnd() {
-        window.location.href = "/";
         this._game = null;
         this._context = null;
         this._shouldInvertPositions = false;
     }
 
-    startGame(gameType, rowNumber, columnNumber, roundsCount, playersCount, context) {
+    startGame(gameType) {
         if (this.game?.id)
             return;
 
-        const user = new LocalPlayer(UserService.getInstance().user._id, UserService.getInstance().user.name, UserService.getInstance().user.parameters.keysPlayers[0]);
+        const player = new LocalPlayer(UserService.getInstance().user._id, UserService.getInstance().user.name, UserService.getInstance().user.parameters.keysPlayers[0]);
 
-        const users = [user];
+        const players = [player];
         if (gameType === GameType.LOCAL) {
-            const guest = new LocalPlayer("guest", "Guest", UserService.getInstance().user.parameters.keysPlayers[1]);
-            users.push(guest);
+            const guest = new LocalPlayer("guest",
+                (UserService.getInstance().isConnected()) ? "Guest" : "Guest 1",
+                UserService.getInstance().user.parameters.keysPlayers[1]);
+            players.push(guest);
         }
 
-        this._game = new Game(gameType, rowNumber, columnNumber, users, roundsCount, context);
+        this._game = new Game(gameType, 9, 16, players, 3);
 
         this.socket.emit("joinGame", {
             gameType,
-            users: users.map(user => ({id: user.id, name: user.name}))
+            players: players.map(player => ({id: player.id, name: player.name}))
         });
     }
 

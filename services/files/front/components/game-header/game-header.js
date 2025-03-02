@@ -1,11 +1,12 @@
-import {Component} from "../component/component.js";
 import {convertRemToPixels, hexToRGB, resizeCanvas, rgbToHex, waitForElm} from "../../js/Utils.js";
 import {GameService, GameStatus} from "../../services/game-service.js";
 import {UserService} from "../../services/user-service.js";
+import {ListenerComponent} from "../component/listener-component.js";
 
-export class GameHeader extends Component {
+export class GameHeader extends ListenerComponent {
     constructor() {
         super();
+
         this._roundEndHandler = null;
     }
 
@@ -18,7 +19,9 @@ export class GameHeader extends Component {
 
         this.resizeCanvasFunction();
 
-        this.receiveData(GameService.getInstance().game.players);
+        if (GameService.getInstance().isGameCreated())
+            await this.receiveData(GameService.getInstance().game.players);
+
         this.addAutoCleanListener(window, "resize", this.resizeCanvasFunction);
 
         this._roundEndHandler = (data) => {
@@ -28,14 +31,10 @@ export class GameHeader extends Component {
             } else this.fillCircle(data.round + 1, "#D3D3D3");
         };
 
-        GameService.getInstance().on(GameStatus.ROUND_END, this._roundEndHandler);
-    }
+        this.addEventListener(GameService, GameStatus.CREATED,
+            () => this.receiveData(GameService.getInstance().game.players));
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-
-        if (this._roundEndHandler)
-            GameService.getInstance().off(GameStatus.ROUND_END, this._roundEndHandler);
+        this.addEventListener(GameService, GameStatus.ROUND_END, (data) => this._roundEndHandler(data));
     }
 
     calculateUtils() {

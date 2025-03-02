@@ -1,13 +1,14 @@
-import {Component} from '../component/component.js';
 import {CustomButton} from "../custom-button/custom-button.js";
-import {GameService, GameStatus} from "../../services/game-service.js";
+import {GameService} from "../../services/game-service.js";
+import {GameType} from "../../js/game/Game.js";
+import {USER_EVENTS, UserService} from "../../services/user-service.js";
+import {ListenerComponent} from "../component/listener-component.js";
 
-export class ModeSelector extends Component {
+export class ModeSelector extends ListenerComponent {
     constructor() {
         super();
 
         CustomButton.register();
-        this._gameCreatedHandler = null;
     }
 
     async connectedCallback() {
@@ -23,7 +24,6 @@ export class ModeSelector extends Component {
                 this.lockRankedButton();
 
             const handler = () => {
-                const gameType = Number(button.getAttribute("game-type"));
                 GameService.getInstance().startGame(gameType, 9, 16, 3, 2);
 
                 setTimeout(() => {
@@ -35,6 +35,9 @@ export class ModeSelector extends Component {
 
             this.addAutoCleanListener(button, 'click', handler);
         });
+
+        this.addEventListener(UserService, USER_EVENTS.CONNECTION, () => this.unLockRankedButton());
+        this.addEventListener(UserService, USER_EVENTS.LOGOUT, () => this.lockRankedButton());
     }
 
     lockRankedButton() {
