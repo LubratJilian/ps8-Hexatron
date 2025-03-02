@@ -13,15 +13,15 @@ export class ModeSelector extends Component {
     async connectedCallback() {
         await super.connectedCallback();
 
-        this._gameCreatedHandler = () => this._handleGameCreated();
-
-        GameService.getInstance().on(
-            GameStatus.CREATED,
-            this._gameCreatedHandler
-        );
+        this._rankedButton = this.shadowRoot.querySelector(`custom-button[game-type="${GameType.RANKED}"]`);
 
         const buttons = this.shadowRoot.querySelectorAll("custom-button");
         buttons.forEach(button => {
+            const gameType = Number(button.getAttribute("game-type"));
+
+            if (gameType === GameType.RANKED && !UserService.getInstance().isConnected())
+                this.lockRankedButton();
+
             const handler = () => {
                 const gameType = Number(button.getAttribute("game-type"));
                 GameService.getInstance().startGame(gameType, 9, 16, 3, 2);
@@ -31,20 +31,13 @@ export class ModeSelector extends Component {
         });
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-
-        if (this._gameCreatedHandler) {
-            GameService.getInstance().off(
-                GameStatus.CREATED,
-                this._gameCreatedHandler
-            );
-        }
+    lockRankedButton() {
+        this._rankedButton.setAttribute("locked", "");
+        this._rankedButton.setAttribute("tooltip-message", "You must be logged in to play Ranked mode.");
     }
 
-    _handleGameCreated() {
-        window.dispatchEvent(new CustomEvent("navigate", {
-            detail: {route: "/game"}
-        }));
+    unLockRankedButton() {
+        this._rankedButton.removeAttribute("locked");
+        this._rankedButton.removeAttribute("tooltip-message");
     }
 }
