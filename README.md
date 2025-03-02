@@ -1,49 +1,40 @@
-# PS8
+# PS8 - HEXATRON
 
-## Requirements
+## Team
 
-Node.js is the only requirement.
-
-## Install
-
-- Clone the repository
-- In each project inside `services/` run `npm install` to download all the dependencies.
-
-Note: this command should be run again every time you install/delete a package (which should not happen a lot)
+- Antoine-Marie Michelozzi
+- Jilian Lubrat
 
 ## Run
 
-In each project, run `node index.js` so the server will start listening to requests.
+To run the project, you need to have Docker and Docker Compose installed.
+
+There are two possible run modes:
+
+- Development Mode
+- Production Mode
+
+### 1. Development mode
+
+The development mode allows you to edit the front without to have to rebuild the ```files-service``` to see the result, just refresh the page.
+The ```front``` directory of the ```files-service``` is not copied in the container but mounted as a volume.
+
+This setup is achieved by merging two Docker Compose files: the main ```docker-compose.yml``` file and the ```docker-compose.dev.yml``` file.
+
+To launch in development mode, run the following command:
+
+ ``` 
+ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file Variables.env up -d --build 
+ ```
+
+### 2. Production mode
+
+The production is the default mode. The ```front``` directory of the ```files-service``` is copied in the container.
+
+To launch in production mode, run the following command:
+
+ ``` 
+ docker-compose --env-file Variables.env up -d --build 
+ ```
 
 ---
-
-## Architecture
-
-In the `services/` folder you will find all the projects that makes your website. Each subfolder is a node.js project
-that contains:
-- A `package.json` (and potentially some `node_modules`)
-- An `index.js` file which is an HTTP server able to received requests
-- Some logic used for the service to work correctly
-
-
----
-
-At the start of your project, there are 2 services:
-- `gateway` which is the clients' entry point. It receives all the requests and then redirect them to the correct service.
-- `files` which is used to serve files. It is where your front files will go
-
----
-
-To create a new service:
-- Create a new folder inside `services/`
-- Run `npm init -y` inside the created folder
-- Create an `index.js` containing an HTTP server (and listening to a new port)
-- Add any logic you want
-
----
-
-To call a service:
-
-2 external packages are allowed to transfer a request:
-- `http-proxy` allows you to easily transfer a request "as-is" to another HTTP Server (you have an example in the gateway service)
-- `axios` to perform specific REST requests.

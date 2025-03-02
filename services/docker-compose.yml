@@ -86,6 +86,7 @@ services:
     build:
       context: ./files/
       network: host
+      target: prod
     networks:
       - network-services
     expose:
