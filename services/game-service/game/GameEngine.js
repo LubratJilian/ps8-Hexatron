@@ -8,7 +8,7 @@ const MiniMaxAI = require("./ai/MiniMaxAI");
 const crypto = require("crypto");
 
 class GameEngine {
-    constructor(users, gameType, rowNumber, columnNumber, roundsCount, playersCount, eventHandler, choiceTimeout = 250, setupTimeout = 1000) {
+    constructor(players, gameType, rowNumber, columnNumber, roundsCount, playersCount, eventHandler, choiceTimeout = 250, setupTimeout = 1000) {
         this._eventHandler = eventHandler;
         this._id = crypto.randomUUID();
         this._playersCount = playersCount;
@@ -20,7 +20,8 @@ class GameEngine {
         switch (gameType) {
             case GameType.AI:
             case GameType.LOCAL:
-                this.initGame(users, gameType, playersCount, rowNumber, columnNumber, roundsCount);
+            case GameType.RANKED:
+                this.initGame(players, gameType, playersCount, rowNumber, columnNumber, roundsCount);
                 break;
             default:
                 throw {
@@ -41,20 +42,20 @@ class GameEngine {
         return this._game;
     }
 
-    initGame(users, gameType, playersCount, rowNumber, columnNumber, roundsCount) {
-        if (users.length > playersCount)
-            throw new Error(`Too many users for this game. Maximum allowed: ${playersCount}, received: ${users.length}`);
+    initGame(players, gameType, playersCount, rowNumber, columnNumber, roundsCount) {
+        if (players.length > playersCount)
+            throw new Error(`Too many users for this game. Maximum allowed: ${playersCount}, received: ${players.length}`);
 
-        let players = Object.fromEntries(users.map(user => [user.id, new RemotePlayer(user.id, user.name, user.socketId)]));
+        let mappedPlayers = new Map(players.map(player => [player.id, player]));
 
         if (gameType === GameType.AI) {
-            for (let i = users.length; i < playersCount; i++) {
+            for (let i = players.length; i < playersCount; i++) {
                 let id = crypto.randomUUID();
-                players[id] = new MiniMaxAI(id, `MinMaxAI ${i}`);
+                mappedPlayers.set(id, new MiniMaxAI(id, `MinMaxAI ${i}`));
             }
         }
 
-        this._game = new Game(gameType, rowNumber, columnNumber, players, roundsCount);
+        this._game = new Game(gameType, rowNumber, columnNumber, mappedPlayers, roundsCount);
     }
 
     remapMovements(playerId, diff) {
@@ -104,7 +105,7 @@ class GameEngine {
             data: {newPositions: this.game.playersPositions}
         });
 
-        this._remainingPlayers = {...this._game.players};
+        this._remainingPlayers = Object.fromEntries(this._game.players);
 
         this.initializePlayersDirections();
 
@@ -213,7 +214,7 @@ class GameEngine {
     }
 
     isGameEmpty() {
-        const nonAIPlayers = Object.values(this.game.players)
+        const nonAIPlayers = Array.from(this.game.players.values())
             .filter(player => player.playerType !== PlayerType.AI);
 
         return this._disconnectedPlayers.size === nonAIPlayers.length;
@@ -236,6 +237,10 @@ class GameEngine {
             this._game.resetBoard();
         }
         this.emitGameUpdate({status: GAME_END});
+    }
+
+    addPlayer(player) {
+        this.game.players.set(player.id, player);
     }
 
     async runRound() {

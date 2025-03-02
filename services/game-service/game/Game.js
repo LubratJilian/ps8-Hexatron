@@ -44,7 +44,7 @@ class Game {
     }
 
     getPlayer(playerId) {
-        return this.players[playerId];
+        return this.players.get(playerId);
     }
 
     getPlayerPosition(playerId) {
@@ -78,12 +78,12 @@ class Game {
     }
 
     setPlayersStartPositions() {
-        let playersLength = Object.keys(this.players).length;
+        let playersLength = this.players.size;
         if (playersLength < 1 || playersLength > 4)
             throw new Error("Unsupported number of players.");
 
         let possiblePositions = this.generatePossibleStartPositions();
-        let playerIds = Object.keys(this.players);
+        let playerIds = Array.from(this.players.keys());
 
         this.playersPositions = Object.fromEntries(
             playerIds.map((playerId, index) => [playerId, possiblePositions[index]])
