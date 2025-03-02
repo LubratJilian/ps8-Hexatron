@@ -25,6 +25,12 @@ export class ModeSelector extends Component {
             const handler = () => {
                 const gameType = Number(button.getAttribute("game-type"));
                 GameService.getInstance().startGame(gameType, 9, 16, 3, 2);
+
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent("navigate", {
+                        detail: {route: "/game"}
+                    }));
+                }, 200);
             };
 
             this.addAutoCleanListener(button, 'click', handler);
