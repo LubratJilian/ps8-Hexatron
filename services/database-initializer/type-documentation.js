@@ -28,11 +28,7 @@ const User = {
         maxLength: 20,
         pattern: "^[a-zA-Z0-9_\\-]+$"
     },
-    parameters: {
-        bsonType: "object",
-        properties: Parameters.properties,
-        additionalProperties: false
-    },
+    parameters: Parameters,
     password: {
         bsonType: "string",
         minLength: 8,
