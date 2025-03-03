@@ -1,11 +1,12 @@
-import {Component} from "../component/component.js";
 import {convertRemToPixels, hexToRGB, resizeCanvas, rgbToHex, waitForElm} from "../../js/Utils.js";
-import {CURRENT_USER} from "../../js/UserMock.js";
 import {GameService, GameStatus} from "../../services/game-service.js";
+import {UserService} from "../../services/user-service.js";
+import {ListenerComponent} from "../component/listener-component.js";
 
-export class GameHeader extends Component {
+export class GameHeader extends ListenerComponent {
     constructor() {
         super();
+
         this._roundEndHandler = null;
     }
 
@@ -18,24 +19,22 @@ export class GameHeader extends Component {
 
         this.resizeCanvasFunction();
 
-        this.receiveData(GameService.getInstance().game.players);
+        if (GameService.getInstance().isGameCreated())
+            await this.receiveData(GameService.getInstance().game.players);
+
         this.addAutoCleanListener(window, "resize", this.resizeCanvasFunction);
 
         this._roundEndHandler = (data) => {
             if (data.status === "winner") {
-                const colorIndex = +(data.winner !== CURRENT_USER.id);
-                this.fillCircle(data.round + 1, CURRENT_USER.parameters.playersColors[colorIndex]);
-            }
+                const colorIndex = +(data.winner !== UserService.getInstance().user._id);
+                this.fillCircle(data.round + 1, UserService.getInstance().user.parameters.playersColors[colorIndex]);
+            } else this.fillCircle(data.round + 1, "#D3D3D3");
         };
 
-        GameService.getInstance().on(GameStatus.ROUND_END, this._roundEndHandler);
-    }
+        this.addEventListener(GameService, GameStatus.CREATED,
+            () => this.receiveData(GameService.getInstance().game.players));
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-
-        if (this._roundEndHandler)
-            GameService.getInstance().off(GameStatus.ROUND_END, this._roundEndHandler);
+        this.addEventListener(GameService, GameStatus.ROUND_END, (data) => this._roundEndHandler(data));
     }
 
     calculateUtils() {
@@ -87,7 +86,7 @@ export class GameHeader extends Component {
         const ids = Object.keys(players);
         let n = 1;
         for (let k = 0; k < ids.length; k++) {
-            n = CURRENT_USER.id === ids[k] ? 1 : 2;
+            n = UserService.getInstance().user._id === ids[k] ? 1 : 2;
             waitForElm(this, "name-player" + n).then((element) => {
                 element.innerText = players[ids[k]]._name;
             });

@@ -1,15 +1,18 @@
 const http = require('http');
 const {Server} = require('socket.io');
 const GameEngine = require("./game/GameEngine.js");
-const {Player} = require("./game/Player");
 const {GAME_END, CREATED} = require("./game/GameStatus");
+const RemotePlayer = require("./game/RemotePlayer");
+const {GameType} = require("./game/Game");
+const {GAME_SETTINGS} = require("./game/Utils");
 
-const ErrorTypes = {
+const ErrorTypes = Object.freeze({
     GAME_NOT_FOUND: 'GAME_NOT_FOUND',
     PLAYER_NOT_FOUND: 'PLAYER_NOT_FOUND',
     INVALID_INPUT: 'INVALID_INPUT',
     GAME_CREATION_FAILED: 'GAME_CREATION_FAILED',
-};
+    ALREADY_IN_GAME: 'ALREADY_IN_GAME'
+});
 
 const server = http.createServer(function (request, response) {
     if (request.url.split("/")[1] === "health") {
@@ -27,40 +30,17 @@ const io = new Server(server, {
 
 const activeGames = new Map(); // { gameEngineId => gameEngine }
 const socketToUser = new Map(); // socketId -> userId
+const friendlyGames = new Map(); // playerId -> gameEngine
+const pendingGames = [];
 
-function handleEvent(gatewaySocket, gameId, eventName, eventData) {
+function handleEvent(gameId, eventName, eventData) {
     if (!activeGames.has(gameId))
         return;
 
-    gatewaySocket.emit(eventName, eventData);
+    io.to(gameId).emit(eventName, eventData);
 
     if (eventName === "refreshStatus" && eventData.status === GAME_END)
         activeGames.delete(gameId);
-}
-
-function validateGameInput(data) {
-    const {gameType, rowNumber, columnNumber, roundsCount, playersCount, users} = data;
-
-    if (gameType == null || !rowNumber || !columnNumber || !roundsCount || !playersCount || !users) {
-        throw {
-            type: ErrorTypes.INVALID_INPUT,
-            message: "Missing required game parameters"
-        };
-    }
-
-    if (rowNumber <= 0 || columnNumber <= 0 || roundsCount <= 0 || playersCount <= 0) {
-        throw {
-            type: ErrorTypes.INVALID_INPUT,
-            message: "Invalid game dimensions or parameters"
-        };
-    }
-
-    if (!Array.isArray(users) || users.length === 0) {
-        throw {
-            type: ErrorTypes.INVALID_INPUT,
-            message: "Invalid users data"
-        };
-    }
 }
 
 function sendError(socket, errorType, message) {
@@ -70,70 +50,116 @@ function sendError(socket, errorType, message) {
     });
 }
 
+function startGameIfReady(game, gameIndex, isNewGame) {
+    const isReady = game.game.players.size === game.playersCount || game.game.type === GameType.AI;
+
+    if (isReady) {
+        if (gameIndex !== -1)
+            pendingGames.splice(gameIndex, 1);
+
+        game.start().then();
+        activeGames.set(game.id, game);
+        io.to(game.id).emit("refreshStatus", {
+            status: CREATED,
+            data: {id: game.id, players: Object.fromEntries(game.game.players)}
+        });
+    } else if (isNewGame)
+        pendingGames.push(game);
+
+    return isReady;
+}
+
+function validateJoin(users, gameType, socket) {
+    if (!Array.isArray(users) || users.length === 0 || !gameType == null) {
+        throw {
+            type: ErrorTypes.INVALID_INPUT,
+            message: "Invalid data"
+        };
+    }
+
+    const socketRooms = Array.from(socket.rooms);
+    const isAlreadyInGame = socketRooms.some(room => room !== socket.id);
+
+    if (isAlreadyInGame) {
+        throw {
+            type: ErrorTypes.ALREADY_IN_GAME,
+            message: "This user is already in a game."
+        };
+    }
+}
+
+function createNewGame(players, gameType) {
+    return new GameEngine(
+        players,
+        gameType,
+        GAME_SETTINGS.ROW_NUMBER,
+        GAME_SETTINGS.COL_NUMBER,
+        GAME_SETTINGS.ROUNDS_COUNT,
+        GAME_SETTINGS.PLAYERS_COUNT,
+        (gameId, eventName, eventData) => handleEvent(gameId, eventName, eventData)
+    );
+}
+
+function joinFriendlyGame(player, expectedPlayerId, socket) {
+    let game;
+
+    // If the player already has a pending friendly game, add them to it
+    if (friendlyGames.has(player.id)) {
+        game = friendlyGames.get(player.id);
+        game.addPlayer(player.id);
+        socket.join(game.id);
+    }
+    // Otherwise, if an expected player ID is provided, create a new game
+    else if (expectedPlayerId) {
+        game = createNewGame([player], GameType.FRIENDLY);
+        socket.join(game.id);
+        friendlyGames.set(expectedPlayerId, game);
+    }
+
+    if (startGameIfReady(game, -1, false))
+        friendlyGames.delete(expectedPlayerId);
+}
+
 io.on('connection', (gatewaySocket) => {
     console.log('✅ Gateway socket connected to the Game Service');
 
-    gatewaySocket.on("disconnecting", () => {
-        gatewaySocket.rooms.forEach((room) => {
-            const playerIds = socketToUser.get(gatewaySocket.id);
-            const game = activeGames.get(room);
-
-            if (!game || !playerIds)
-                return;
-
-            const leavingPlayers = Object.values(game.game.players)
-                .filter(gamePlayer => playerIds.includes(gamePlayer.id));
-
-            const gameEnd = leavingPlayers.reduce(
-                (gameEnd, player) => gameEnd || game.disconnectPlayer(player.id), false
-            );
-
-            if (gameEnd)
-                activeGames.delete(game.id);
-
-            socketToUser.delete(gatewaySocket.id);
-            gatewaySocket.broadcast.to(room).emit("userLeft", `${gatewaySocket.id} leaved the room`);
-        });
-    });
-
-    gatewaySocket.on('disconnect', () => {
-        console.log('❌ Gateway socket disconnected');
-    });
-
-    gatewaySocket.on("start", (data) => {
+    gatewaySocket.on("joinGame", (gameParams) => {
         try {
-            validateGameInput(data);
-            const {gameType, rowNumber, columnNumber, roundsCount, playersCount, users} = data;
-            const players = [];
+            const {players, gameType, expectedPlayerId = null} = gameParams;
+            validateJoin(players, gameType, gatewaySocket);
+
+            const remotePlayers = [];
             const playerIds = [];
 
-            users.forEach(user => {
-                players.push(new Player(user.id, user.name));
-                playerIds.push(user.id);
+            players.forEach(player => {
+                remotePlayers.push(new RemotePlayer(player.id, player.name));
+                playerIds.push(player.id);
             });
 
             socketToUser.set(gatewaySocket.id, playerIds);
 
-            const newGame = new GameEngine(
-                players,
-                gameType,
-                rowNumber,
-                columnNumber,
-                roundsCount,
-                playersCount,
-                (gameId, eventName, eventData) => handleEvent(gatewaySocket, gameId, eventName, eventData)
+            if (gameType === GameType.FRIENDLY) {
+                joinFriendlyGame(remotePlayers[0], expectedPlayerId, gatewaySocket);
+                return;
+            }
+
+            const gameIndex = pendingGames.findIndex(gameEngine =>
+                gameEngine.game.type === gameType &&
+                gameEngine.game.players.size + remotePlayers.length <= gameEngine.playersCount
             );
 
-            activeGames.set(newGame.id, newGame);
-            gatewaySocket.join(newGame.id);
+            let game;
+            let isNewGame = false;
+            if (gameIndex !== -1) {
+                game = pendingGames[gameIndex];
+                remotePlayers.forEach(player => game.addPlayer(player));
+            } else {
+                game = createNewGame(remotePlayers, gameType);
+                isNewGame = true;
+            }
 
-            newGame.start().then();
-
-            gatewaySocket.emit("refreshStatus", {
-                status: CREATED,
-                data: {id: newGame.id, players: newGame.game.players}
-            });
-
+            gatewaySocket.join(game.id);
+            startGameIfReady(game, gameIndex, isNewGame);
         } catch ({type, message}) {
             sendError(
                 gatewaySocket,
@@ -158,13 +184,40 @@ io.on('connection', (gatewaySocket) => {
 
         const gameEngine = activeGames.get(gameId);
 
-        const player = gameEngine.game.players[playerId];
+        const player = gameEngine.game.players.get(playerId);
         if (!player) {
             sendError(gatewaySocket, ErrorTypes.PLAYER_NOT_FOUND, "Player not found");
             return;
         }
 
         player.resolveMove(move);
+    });
+
+    gatewaySocket.on("disconnecting", () => {
+        gatewaySocket.rooms.forEach((room) => {
+            const playerIds = socketToUser.get(gatewaySocket.id);
+            const game = activeGames.get(room);
+
+            if (!game || !playerIds)
+                return;
+
+            const leavingPlayers = Array.from(game.game.players.values())
+                .filter(gamePlayer => playerIds.includes(gamePlayer.id));
+
+            const gameEnd = leavingPlayers.reduce(
+                (gameEnd, player) => gameEnd || game.disconnectPlayer(player.id), false
+            );
+
+            if (gameEnd)
+                activeGames.delete(game.id);
+
+            socketToUser.delete(gatewaySocket.id);
+            gatewaySocket.broadcast.to(room).emit("userLeft", `${gatewaySocket.id} leaved the room`);
+        });
+    });
+
+    gatewaySocket.on('disconnect', () => {
+        console.log('❌ Gateway socket disconnected');
     });
 });
 

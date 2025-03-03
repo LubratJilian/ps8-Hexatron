@@ -1,4 +1,10 @@
+:host {
+    position: relative;
+    display: inline-block;
+}
+
 button {
+    height: 36px;
     background-color: #efefef;
     color: #0b0b0b;
     border: none;
@@ -7,6 +13,9 @@ button {
     font-size: 0.8rem;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 button:hover {
@@ -20,4 +29,33 @@ button:active {
 button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
+}
+
+#lock-icon {
+    display: none;
+    width: 16px;
+    height: 16px;
+}
+
+#tooltip {
+    visibility: hidden;
+    background-color: black;
+    color: white;
+    text-align: center;
+    padding: 5px;
+    border-radius: 5px;
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+:host([locked]) button:hover + .tooltip {
+    visibility: visible;
+    opacity: 1;
 }

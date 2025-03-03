@@ -2,7 +2,7 @@
 const Parameters = {
     bsonType: "object",
     properties: {
-        _keysPlayers: {
+        keysPlayers: {
             bsonType: "array",
             items: {
                 bsonType: "array",
@@ -11,13 +11,14 @@ const Parameters = {
                 }
             }
         },
-        _playersColors: {
+        playersColors: {
             bsonType: "array",
             items: {
                 bsonType: "string"
             }
         }
-    }
+    },
+    additionalProperties: false
 };
 
 const User = {
@@ -27,9 +28,7 @@ const User = {
         maxLength: 20,
         pattern: "^[a-zA-Z0-9_\\-]+$"
     },
-    parameters: {
-        bsonType: "string",
-    },
+    parameters: Parameters,
     password: {
         bsonType: "string",
         minLength: 8,

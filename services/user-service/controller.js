@@ -54,8 +54,8 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const credentials = req.body;
-        let {_id, ...user} = await checkPassword(credentials.name, credentials.password, false);
-        const id = convertToString(_id);
+        const user = await checkPassword(credentials.name, credentials.password, false);
+        const id = convertToString(user._id);
         const accessToken = generateToken(id, true);
         const refreshToken = await generateRefreshToken(id);
 
