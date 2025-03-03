@@ -4,6 +4,7 @@ const GameEngine = require("./game/GameEngine.js");
 const {GAME_END, CREATED} = require("./game/GameStatus");
 const RemotePlayer = require("./game/RemotePlayer");
 const {GameType} = require("./game/Game");
+const {GAME_SETTINGS} = require("./game/Utils");
 
 const ErrorTypes = Object.freeze({
     GAME_NOT_FOUND: 'GAME_NOT_FOUND',
@@ -29,6 +30,7 @@ const io = new Server(server, {
 
 const activeGames = new Map(); // { gameEngineId => gameEngine }
 const socketToUser = new Map(); // socketId -> userId
+const friendlyGames = new Map(); // playerId -> gameEngine
 const pendingGames = [];
 
 function handleEvent(gameId, eventName, eventData) {
@@ -49,7 +51,9 @@ function sendError(socket, errorType, message) {
 }
 
 function startGameIfReady(game, gameIndex, isNewGame) {
-    if (game.game.players.size === game.playersCount || game.game.type === GameType.AI) {
+    const isReady = game.game.players.size === game.playersCount || game.game.type === GameType.AI;
+
+    if (isReady) {
         if (gameIndex !== -1)
             pendingGames.splice(gameIndex, 1);
 
@@ -61,6 +65,8 @@ function startGameIfReady(game, gameIndex, isNewGame) {
         });
     } else if (isNewGame)
         pendingGames.push(game);
+
+    return isReady;
 }
 
 function validateJoin(users, gameType, socket) {
@@ -82,39 +88,44 @@ function validateJoin(users, gameType, socket) {
     }
 }
 
+function createNewGame(players, gameType) {
+    return new GameEngine(
+        players,
+        gameType,
+        GAME_SETTINGS.ROW_NUMBER,
+        GAME_SETTINGS.COL_NUMBER,
+        GAME_SETTINGS.ROUNDS_COUNT,
+        GAME_SETTINGS.PLAYERS_COUNT,
+        (gameId, eventName, eventData) => handleEvent(gameId, eventName, eventData)
+    );
+}
+
+function joinFriendlyGame(player, expectedPlayerId, socket) {
+    let game;
+
+    // If the player already has a pending friendly game, add them to it
+    if (friendlyGames.has(player.id)) {
+        game = friendlyGames.get(player.id);
+        game.addPlayer(player.id);
+        socket.join(game.id);
+    }
+    // Otherwise, if an expected player ID is provided, create a new game
+    else if (expectedPlayerId) {
+        game = createNewGame([player], GameType.FRIENDLY);
+        socket.join(game.id);
+        friendlyGames.set(expectedPlayerId, game);
+    }
+
+    if (startGameIfReady(game, -1, false))
+        friendlyGames.delete(expectedPlayerId);
+}
+
 io.on('connection', (gatewaySocket) => {
     console.log('✅ Gateway socket connected to the Game Service');
 
-    gatewaySocket.on("disconnecting", () => {
-        gatewaySocket.rooms.forEach((room) => {
-            const playerIds = socketToUser.get(gatewaySocket.id);
-            const game = activeGames.get(room);
-
-            if (!game || !playerIds)
-                return;
-
-            const leavingPlayers = Array.from(game.game.players.values())
-                .filter(gamePlayer => playerIds.includes(gamePlayer.id));
-
-            const gameEnd = leavingPlayers.reduce(
-                (gameEnd, player) => gameEnd || game.disconnectPlayer(player.id), false
-            );
-
-            if (gameEnd)
-                activeGames.delete(game.id);
-
-            socketToUser.delete(gatewaySocket.id);
-            gatewaySocket.broadcast.to(room).emit("userLeft", `${gatewaySocket.id} leaved the room`);
-        });
-    });
-
-    gatewaySocket.on('disconnect', () => {
-        console.log('❌ Gateway socket disconnected');
-    });
-
     gatewaySocket.on("joinGame", (gameParams) => {
         try {
-            const {players, gameType} = gameParams;
+            const {players, gameType, expectedPlayerId = null} = gameParams;
             validateJoin(players, gameType, gatewaySocket);
 
             const remotePlayers = [];
@@ -126,6 +137,12 @@ io.on('connection', (gatewaySocket) => {
             });
 
             socketToUser.set(gatewaySocket.id, playerIds);
+
+            if (gameType === GameType.FRIENDLY) {
+                joinFriendlyGame(remotePlayers[0], expectedPlayerId, gatewaySocket);
+                return;
+            }
+
             const gameIndex = pendingGames.findIndex(gameEngine =>
                 gameEngine.game.type === gameType &&
                 gameEngine.game.players.size + remotePlayers.length <= gameEngine.playersCount
@@ -137,15 +154,7 @@ io.on('connection', (gatewaySocket) => {
                 game = pendingGames[gameIndex];
                 remotePlayers.forEach(player => game.addPlayer(player));
             } else {
-                game = new GameEngine(
-                    remotePlayers,
-                    gameType,
-                    9,
-                    16,
-                    3,
-                    2,
-                    (gameId, eventName, eventData) => handleEvent(gameId, eventName, eventData)
-                );
+                game = createNewGame(remotePlayers, gameType);
                 isNewGame = true;
             }
 
@@ -182,6 +191,33 @@ io.on('connection', (gatewaySocket) => {
         }
 
         player.resolveMove(move);
+    });
+
+    gatewaySocket.on("disconnecting", () => {
+        gatewaySocket.rooms.forEach((room) => {
+            const playerIds = socketToUser.get(gatewaySocket.id);
+            const game = activeGames.get(room);
+
+            if (!game || !playerIds)
+                return;
+
+            const leavingPlayers = Array.from(game.game.players.values())
+                .filter(gamePlayer => playerIds.includes(gamePlayer.id));
+
+            const gameEnd = leavingPlayers.reduce(
+                (gameEnd, player) => gameEnd || game.disconnectPlayer(player.id), false
+            );
+
+            if (gameEnd)
+                activeGames.delete(game.id);
+
+            socketToUser.delete(gatewaySocket.id);
+            gatewaySocket.broadcast.to(room).emit("userLeft", `${gatewaySocket.id} leaved the room`);
+        });
+    });
+
+    gatewaySocket.on('disconnect', () => {
+        console.log('❌ Gateway socket disconnected');
     });
 });
 

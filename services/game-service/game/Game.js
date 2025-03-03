@@ -3,11 +3,12 @@ const Position = require("./Position");
 const {getRandomInt} = require("./Utils");
 const {Status} = require("./Tile");
 
-const GameType = {
+const GameType = Object.freeze({
     LOCAL: 0,
     AI: 1,
-    RANKED: 2
-};
+    RANKED: 2,
+    FRIENDLY: 3
+});
 
 class Game {
     constructor(type, rowNumber, columnNumber, players, roundsCount) {

@@ -1,5 +1,4 @@
 const {GameType, Game} = require("./Game");
-const RemotePlayer = require("./RemotePlayer");
 const {defaultMovementsMapping, Directions, MovementTypes, DISPLACEMENT_FUNCTIONS} = require("./GameUtils");
 const PlayerState = require("./PlayerState");
 const {PlayerType} = require("./Player");
@@ -17,17 +16,10 @@ class GameEngine {
         this._remainingPlayers = {};
         this._disconnectedPlayers = new Set();
 
-        switch (gameType) {
-            case GameType.AI:
-            case GameType.LOCAL:
-            case GameType.RANKED:
-                this.initGame(players, gameType, playersCount, rowNumber, columnNumber, roundsCount);
-                break;
-            default:
-                throw {
-                    message: `The game type ${gameType} is not yet supported`
-                };
-        }
+        if (!Object.values(GameType).includes(gameType) || GameType === GameType.FRIENDLY)
+            throw new Error(`The game type ${gameType} is not yet supported`);
+
+        this.initGame(players, gameType, playersCount, rowNumber, columnNumber, roundsCount);
     }
 
     get id() {
