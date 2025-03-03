@@ -24,8 +24,8 @@ export class CustomButton extends Component {
 
     update() {
         const button = this.shadowRoot.querySelector("button");
-        const lockIcon = this.shadowRoot.querySelector(".lock-icon");
-        const tooltip = this.shadowRoot.querySelector(".tooltip");
+        const lockIcon = this.shadowRoot.getElementById("lock-icon");
+        const tooltip = this.shadowRoot.getElementById("tooltip");
 
         if (button)
             button.disabled = this.locked;

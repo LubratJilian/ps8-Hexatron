@@ -31,12 +31,13 @@ button:disabled {
     cursor: not-allowed;
 }
 
-.lock-icon {
+#lock-icon {
+    display: none;
     width: 16px;
     height: 16px;
 }
 
-.tooltip {
+#tooltip {
     visibility: hidden;
     background-color: black;
     color: white;
