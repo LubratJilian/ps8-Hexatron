@@ -55,7 +55,7 @@ button:disabled {
     pointer-events: none;
 }
 
-:host([locked]) button:hover + .tooltip {
+:host([locked]) button:hover + #tooltip {
     visibility: visible;
     opacity: 1;
 }

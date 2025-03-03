@@ -9,7 +9,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
-      - ./mongodb:/data/db
+      - mongo-data:/data/db
     expose:
       - "27017"
     healthcheck:
@@ -125,7 +125,8 @@ services:
 
   doc-api:
     build:
-      ./documentation-api/
+      context: ./documentation-api/
+      network: host
     networks:
       - network-services
     expose:
@@ -143,3 +144,6 @@ services:
 networks:
   network-services:
     driver: bridge
+
+volumes:
+  mongo-data:
