@@ -9,9 +9,6 @@ export class PlayerKeys extends Component {
 
     set data(data) {
         this._data = data;
-        if (this.isConnected) {
-            this.generateGrid();
-        }
     }
 
     async connectedCallback() {
@@ -22,7 +19,6 @@ export class PlayerKeys extends Component {
     }
 
     modifyKey(index) {
-        //TODO Patch bug modif, cancel, modif -> letter stay in the hexagon
         this.shadowRoot.getElementById(index).textContent = "_";
         this.dispatchEvent(new CustomEvent("keyModificationAsked", {
             detail: {componentID: this.id, index: index},
@@ -59,11 +55,9 @@ export class PlayerKeys extends Component {
                         text.textContent = this._data[keyIndex];
                         text.setAttribute("font-size", `${convertRemToPixels(0.3)}rem`);
                         text.setAttribute("id", keyIndex);
+
                         gElement.appendChild(text);
-
-                        //gElement.setAttribute("id", `${keyIndex}`);
                         gElement.addEventListener("click", this.modifyKey.bind(this, keyIndex));
-
 
                         keyIndex++;
                     }
@@ -75,6 +69,11 @@ export class PlayerKeys extends Component {
 
     resetKey(index) {
         this.shadowRoot.getElementById(index).textContent = this._data[index];
+    }
+
+    resetKeys(data) {
+        this._data = data;
+        this._data.forEach((key, index) => this.resetKey(index));
     }
 
     newKey(index, key) {

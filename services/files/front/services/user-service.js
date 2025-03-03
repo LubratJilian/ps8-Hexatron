@@ -17,7 +17,7 @@ export const USER_ACTIONS = Object.freeze({
 });
 
 const DEFAULT_PARAMS = {
-    keysPlayers: [["a", "q", "e", "d"], ["u", "j", "o", "l"]],
+    keysPlayers: [["A", "Q", "E", "D"], ["U", "J", "O", "L"]],
     playersColors: ["#ff0000", "#40ff00"]
 };
 
@@ -64,7 +64,7 @@ export class UserService extends EventEmitter {
 
         if (UserService._instance) return UserService._instance;
 
-        this._user = JSON.parse(localStorage.getItem("user")) || new User(0, "Player 1", "assets/profile.svg", DEFAULT_PARAMS);
+        this._user = JSON.parse(localStorage.getItem("user")) || new User("0", "Player 1", "assets/profile.svg", DEFAULT_PARAMS);
         this._accessToken = localStorage.getItem("accessToken") || null;
         this._refreshToken = localStorage.getItem("refreshToken") || null;
         this._connected = localStorage.getItem("connected") || false;
@@ -78,7 +78,7 @@ export class UserService extends EventEmitter {
     }
 
     get user() {
-        return this._user || this._guest;
+        return this._user;
     }
 
     static getInstance() {
@@ -97,6 +97,8 @@ export class UserService extends EventEmitter {
     }
 
     async register(data) {
+        console.log(this.user.parameters, data);
+        data.parameters = this._user.parameters;
         return this._authenticate("api/user/register", data, USER_ACTIONS.REGISTER);
     }
 
@@ -113,28 +115,28 @@ export class UserService extends EventEmitter {
         this.emit(USER_EVENTS.CONNECTION);
     }
 
-    async _authenticate(endpoint, data, action) {
+    async _authenticate(endpoint, data) {
         const response = await this._request("POST", endpoint, data);
         if (response.success) {
             this._setUserData(response.data);
             return {success: true, user: this._user};
         }
-        return {success: false, error: this._getErrorMessage(response.status, action)};
+        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.LOGIN)};
     }
 
     async updateUser(newData) {
-        console.log(this.isConnected());
         if (this.isConnected()) {
             const response = await this._request("PATCH", `api/user/me`, newData);
             if (response.success) {
                 const data = response.data;
-                this.user = data.user;
+                console.log(data.user);
+                this._user = data.user;
                 localStorage.setItem("user", JSON.stringify(this._user));
                 return {success: true, newData: newData};
             }
             return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)};
         } else {
-            Object.keys(newData).forEach(key => this.user[key] = newData[key]);
+            Object.entries(newData).forEach(([key, value]) => this._user[key] = value);
             localStorage.setItem("user", JSON.stringify(this._user));
         }
     }
