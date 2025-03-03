@@ -125,8 +125,8 @@ services:
 
   doc-api:
     build:
-      - context: ./documentation-api/
-      - network: host
+      context: ./documentation-api/
+      network: host
     networks:
       - network-services
     expose:
