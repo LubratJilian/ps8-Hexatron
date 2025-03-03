@@ -1,7 +1,7 @@
 import {Board} from "./Board.js";
 import {Position} from "./Position.js";
 import {Directions, DISPLACEMENT_FUNCTIONS} from "./GameUtils.js";
-import {CURRENT_USER} from "../UserMock.js";
+import {UserService} from "../../services/user-service.js";
 
 export const GameType = {
     LOCAL: 0,
@@ -73,19 +73,19 @@ export class Game {
         if (!context)
             return;
 
-        Object.entries(playersPosition).forEach(([player, position], i) => {
-            const curPosition = new Position(...Object.values(position));
-            const prevPosition = this._playersPositions[player];
+        Object.keys(this.players).forEach((playerId, i) => {
+            const curPosition = new Position(...Object.values(playersPosition[playerId]));
+            const prevPosition = this._playersPositions[playerId];
 
             this.board.update(
                 prevPosition,
                 curPosition,
-                CURRENT_USER.parameters.playersColors[i],
+                UserService.getInstance().user.parameters.playersColors[i],
                 context,
                 this.obtainDirection(prevPosition, curPosition)
             );
 
-            this._playersPositions[player] = curPosition;
+            this._playersPositions[playerId] = curPosition;
         });
     }
 

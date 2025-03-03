@@ -1,3 +1,11 @@
+import {User} from "../js/User.js";
+import {EventEmitter} from "../js/EventEmitter.js";
+
+export const USER_EVENTS = Object.freeze({
+    CONNECTION: "CONNECTION",
+    LOGOUT: "LOGOUT"
+});
+
 export const USER_ACTIONS = Object.freeze({
     LOGIN: "login",
     REGISTER: "register",
@@ -8,7 +16,12 @@ export const USER_ACTIONS = Object.freeze({
     DELETE: "delete"
 });
 
-export class UserService {
+const DEFAULT_PARAMS = {
+    keysPlayers: [["a", "q", "e", "d"], ["u", "j", "o", "l"]],
+    playersColors: ["#ff0000", "#40ff00"]
+};
+
+export class UserService extends EventEmitter {
     static _instance = null;
     static ERROR_MESSAGES = {
         [USER_ACTIONS.LOGIN]: {
@@ -47,17 +60,21 @@ export class UserService {
     };
 
     constructor() {
+        super();
+
         if (UserService._instance) return UserService._instance;
 
+        this._guest = new User("local-user", "Guest", "", DEFAULT_PARAMS);
         this._user = JSON.parse(localStorage.getItem("user")) || null;
         this._accessToken = localStorage.getItem("accessToken") || null;
         this._refreshToken = localStorage.getItem("refreshToken") || null;
 
+        this._eventEmitter = new EventEmitter();
         UserService._instance = this;
     }
 
     get user() {
-        return this._user;
+        return this._user || this._guest;
     }
 
     static getInstance() {
@@ -68,7 +85,7 @@ export class UserService {
     }
 
     isConnected() {
-        return this.user !== null;
+        return this._user !== null;
     }
 
     _getErrorMessage(status, action) {
@@ -76,31 +93,29 @@ export class UserService {
     }
 
     async register(data) {
-        data["parameters"] = " ";
-        const response = await this._request("POST", "api/user/register", data);
-        if (response.success) {
-            const data = response.data;
-            this._user = data.user;
-            this._accessToken = data.accessToken;
-            this._refreshToken = data.refreshToken;
-
-            this._saveToLocalStorage();
-            return {success: true, user: data.user};
-        }
-        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.REGISTER)};
+        data["parameters"] = DEFAULT_PARAMS;
+        return this._authenticate("api/user/register", data, USER_ACTIONS.REGISTER);
     }
 
     async login(data) {
-        const response = await this._request("POST", "api/user/login", data);
+        return this._authenticate("api/user/login", data, USER_ACTIONS.LOGIN);
+    }
+
+    _setUserData(data) {
+        this._user = data.user;
+        this._accessToken = data.accessToken;
+        this._refreshToken = data.refreshToken;
+        this._saveToLocalStorage();
+        this.emit(USER_EVENTS.CONNECTION);
+    }
+
+    async _authenticate(endpoint, data, action) {
+        const response = await this._request("POST", endpoint, data);
         if (response.success) {
-            const data = response.data;
-            this._user = data.user;
-            this._accessToken = data.accessToken;
-            this._refreshToken = data.refreshToken;
-            this._saveToLocalStorage();
-            return {success: true, user: data.user};
+            this._setUserData(response.data);
+            return {success: true, user: this._user};
         }
-        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.LOGIN)};
+        return {success: false, error: this._getErrorMessage(response.status, action)};
     }
 
     async updateUsername(newUsername) {
@@ -128,6 +143,7 @@ export class UserService {
     async logout() {
         await this._request("POST", "api/user/disconnect");
         this._reset();
+        this.emit(USER_EVENTS.LOGOUT);
     }
 
     async delete() {

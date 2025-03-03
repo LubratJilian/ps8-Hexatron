@@ -77,8 +77,4 @@ export class DrawerMenu extends Component {
         }
         this._oppened = !this._oppened;
     }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-    }
 }
