@@ -115,13 +115,13 @@ export class UserService extends EventEmitter {
         this.emit(USER_EVENTS.CONNECTION);
     }
 
-    async _authenticate(endpoint, data) {
+    async _authenticate(endpoint, data, action) {
         const response = await this._request("POST", endpoint, data);
         if (response.success) {
             this._setUserData(response.data);
             return {success: true, user: this._user};
         }
-        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.LOGIN)};
+        return {success: false, error: this._getErrorMessage(response.status, action)};
     }
 
     async updateUser(newData) {
