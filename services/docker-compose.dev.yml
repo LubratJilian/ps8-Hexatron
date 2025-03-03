@@ -1,0 +1,8 @@
+services:
+  files:
+    build:
+      context: ./files/
+      network: host
+      target: dev
+    volumes:
+      - ./files/front:/app/front
