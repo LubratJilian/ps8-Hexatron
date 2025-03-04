@@ -32,7 +32,7 @@ const io = new Server(server, {
 const activeGames = new Map(); // { gameEngineId => gameEngine }
 const socketToUser = new Map(); // socketId -> userId
 const friendlyGames = new Map(); // playerId -> gameEngine
-const pendingGames = [];
+const pendingGames = new Map(); // gameEngineId -> gameEngine
 
 /**
  * Handle a game event
@@ -165,7 +165,7 @@ function joinFriendlyGame(player, expectedPlayerId, socket) {
         friendlyGames.set(expectedPlayerId, game);
     }
 
-    if (startGameIfReady(game, -1, false))
+    if (startGameIfReady(game))
         friendlyGames.delete(expectedPlayerId);
 }
 
@@ -192,23 +192,17 @@ io.on('connection', (gatewaySocket) => {
                 return;
             }
 
-            const gameIndex = pendingGames.findIndex(gameEngine =>
+            let game = Array.from(pendingGames.values()).find(gameEngine =>
                 gameEngine.game.type === gameType &&
                 gameEngine.game.players.size + remotePlayers.length <= gameEngine.playersCount
             );
 
-            let game;
-            let isNewGame = false;
-            if (gameIndex !== -1) {
-                game = pendingGames[gameIndex];
+            if (game)
                 remotePlayers.forEach(player => game.addPlayer(player));
-            } else {
-                game = createNewGame(remotePlayers, gameType);
-                isNewGame = true;
-            }
+            else game = createNewGame(remotePlayers, gameType);
 
             gatewaySocket.join(game.id);
-            startGameIfReady(game, gameIndex, isNewGame);
+            startGameIfReady(game);
         } catch ({type, message}) {
             sendError(
                 gatewaySocket,
