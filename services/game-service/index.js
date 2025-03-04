@@ -11,7 +11,6 @@ const ErrorTypes = Object.freeze({
     PLAYER_NOT_FOUND: 'PLAYER_NOT_FOUND',
     INVALID_INPUT: 'INVALID_INPUT',
     GAME_CREATION_FAILED: 'GAME_CREATION_FAILED',
-    ALREADY_IN_GAME: 'ALREADY_IN_GAME'
     ALREADY_IN_GAME: 'ALREADY_IN_GAME',
     GAME_ERROR: 'GAME_ERROR'
 });
@@ -35,6 +34,13 @@ const socketToUser = new Map(); // socketId -> userId
 const friendlyGames = new Map(); // playerId -> gameEngine
 const pendingGames = [];
 
+/**
+ * Handle a game event
+ *
+ * @param {string} gameId - The game id
+ * @param {string} eventName - The event name
+ * @param {any} eventData - The event data
+ */
 function handleEvent(gameId, eventName, eventData) {
     if (!activeGames.has(gameId))
         return;
@@ -45,6 +51,13 @@ function handleEvent(gameId, eventName, eventData) {
         activeGames.delete(gameId);
 }
 
+/**
+ * Sends an error message to a specific socket.
+ *
+ * @param {Socket} socket - The socket to which the error should be sent.
+ * @param {string} errorType - The type of error.
+ * @param {string} message - A descriptive error message.
+ */
 function sendError(socket, errorType, message) {
     socket.emit("error", {
         type: errorType,
@@ -73,6 +86,14 @@ function startGameIfReady(game, gameIndex, isNewGame) {
 
 function validateJoin(users, gameType, socket) {
     if (!Array.isArray(users) || users.length === 0 || !gameType == null) {
+/**
+ * Validates whether a player can join a game.
+ *
+ * @param {Array} players - An array of player objects attempting to join the game.
+ * @param {string} gameType - The type of game to join (e.g., "FRIENDLY", "COMPETITIVE").
+ * @param {Socket} socket - The socket instance of the player attempting to join.
+ * @throws {Object} Throws an error if the input data is invalid or if the player is already in a game.
+ */
         throw {
             type: ErrorTypes.INVALID_INPUT,
             message: "Invalid data"
@@ -90,6 +111,13 @@ function validateJoin(users, gameType, socket) {
     }
 }
 
+/**
+ * Creates a new game instance with the specified players and game type.
+ *
+ * @param {Array} players - An array of player objects participating in the game.
+ * @param {string} gameType - The type of game to be created.
+ * @returns {GameEngine} A new instance of the GameEngine managing the game.
+ */
 function createNewGame(players, gameType) {
     return new GameEngine(
         players,
@@ -102,12 +130,25 @@ function createNewGame(players, gameType) {
     );
 }
 
+/**
+ * Starts the game if all required players have joined.
+ *
+ * @param {GameEngine} gameEngine - The game engine instance managing the game.
+ * @returns {boolean} True if the game is ready and has started, false otherwise.
+ */
         gameEngine.start().then().catch(({type, _}) => {
             io.to(gameEngine.id).emit("error", {
                 type: type || ErrorTypes.GAME_ERROR,
                 message: "An error has been encountered during the game.",
             });
         });
+/**
+ * Allows a player to join a friendly game, either by joining an existing one or creating a new one.
+ *
+ * @param {RemotePlayer} player - The player attempting to join the game.
+ * @param {string} expectedPlayerId - The ID of the expected opponent.
+ * @param {Socket} socket - The socket instance of the player.
+ */
 function joinFriendlyGame(player, expectedPlayerId, socket) {
     let game;
 
