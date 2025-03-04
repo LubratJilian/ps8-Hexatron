@@ -45,11 +45,14 @@ export class SettingsPortal extends Component {
     keyListener(event) {
         const index = this.currentEventDetail.componentID.match(/\d+$/) - 1;
         this.shadowRoot.getElementById("newKey").style.display = "none";
-        if (this.settings.keysPlayers.some(row => row.includes(event.key.toUpperCase()) && this.settings.keysPlayers[index][this.currentEventDetail.index] !== event.key.toUpperCase())) {
+        if (this.settings.keysPlayers[index][this.currentEventDetail.index] === event.key.toUpperCase()) {
+            this.shadowRoot.getElementById(this.currentEventDetail.componentID).resetKey(this.currentEventDetail.index);
+            this.currentEventDetail = null;
+            return;
+        } else if (this.settings.keysPlayers.some(row => row.includes(event.key.toUpperCase()))) {
             this.shadowRoot.getElementById("alreadyTakenKey").style.display = "flex";
             this.shadowRoot.getElementById(this.currentEventDetail.componentID).resetKey(this.currentEventDetail.index);
         } else {
-            console.log("Touche pressée :", event.key);
             this.shadowRoot.getElementById(this.currentEventDetail.componentID).newKey(this.currentEventDetail.index, event.key.toUpperCase());
             this.settings.keysPlayers[index][this.currentEventDetail.index] = event.key.toUpperCase();
             this.shadowRoot.getElementById("validationPart").style.display = "flex";
@@ -84,7 +87,7 @@ export class SettingsPortal extends Component {
                 }
             }
             this.currentEventDetail = event.detail;
-            document.addEventListener("keydown", this.boundKeyListener, {once: true});
+            this.addAutoCleanListener(document, "keydown", this.boundKeyListener, true);
         }
         if (event.type === "colorModificationAsked") {
             const index = event.detail.componentID.match(/\d+$/) - 1;
