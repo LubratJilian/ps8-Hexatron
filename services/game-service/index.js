@@ -12,6 +12,8 @@ const ErrorTypes = Object.freeze({
     INVALID_INPUT: 'INVALID_INPUT',
     GAME_CREATION_FAILED: 'GAME_CREATION_FAILED',
     ALREADY_IN_GAME: 'ALREADY_IN_GAME'
+    ALREADY_IN_GAME: 'ALREADY_IN_GAME',
+    GAME_ERROR: 'GAME_ERROR'
 });
 
 const server = http.createServer(function (request, response) {
@@ -100,6 +102,12 @@ function createNewGame(players, gameType) {
     );
 }
 
+        gameEngine.start().then().catch(({type, _}) => {
+            io.to(gameEngine.id).emit("error", {
+                type: type || ErrorTypes.GAME_ERROR,
+                message: "An error has been encountered during the game.",
+            });
+        });
 function joinFriendlyGame(player, expectedPlayerId, socket) {
     let game;
 
