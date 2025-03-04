@@ -65,27 +65,6 @@ function sendError(socket, errorType, message) {
     });
 }
 
-function startGameIfReady(game, gameIndex, isNewGame) {
-    const isReady = game.game.players.size === game.playersCount || game.game.type === GameType.AI;
-
-    if (isReady) {
-        if (gameIndex !== -1)
-            pendingGames.splice(gameIndex, 1);
-
-        game.start().then();
-        activeGames.set(game.id, game);
-        io.to(game.id).emit("refreshStatus", {
-            status: CREATED,
-            data: {id: game.id, players: Object.fromEntries(game.game.players)}
-        });
-    } else if (isNewGame)
-        pendingGames.push(game);
-
-    return isReady;
-}
-
-function validateJoin(users, gameType, socket) {
-    if (!Array.isArray(users) || users.length === 0 || !gameType == null) {
 /**
  * Validates whether a player can join a game.
  *
@@ -94,6 +73,8 @@ function validateJoin(users, gameType, socket) {
  * @param {Socket} socket - The socket instance of the player attempting to join.
  * @throws {Object} Throws an error if the input data is invalid or if the player is already in a game.
  */
+function validateJoin(players, gameType, socket) {
+    if (!Array.isArray(players) || players.length === 0 || gameType == null) {
         throw {
             type: ErrorTypes.INVALID_INPUT,
             message: "Invalid data"
@@ -136,12 +117,31 @@ function createNewGame(players, gameType) {
  * @param {GameEngine} gameEngine - The game engine instance managing the game.
  * @returns {boolean} True if the game is ready and has started, false otherwise.
  */
+function startGameIfReady(gameEngine) {
+    const isReady = gameEngine.game.players.size === gameEngine.playersCount || gameEngine.game.type === GameType.AI;
+
+    if (isReady) {
+        if (pendingGames.has(gameEngine.id))
+            pendingGames.delete(gameEngine.id);
+
         gameEngine.start().then().catch(({type, _}) => {
             io.to(gameEngine.id).emit("error", {
                 type: type || ErrorTypes.GAME_ERROR,
                 message: "An error has been encountered during the game.",
             });
         });
+
+        activeGames.set(gameEngine.id, gameEngine);
+        io.to(gameEngine.id).emit("refreshStatus", {
+            status: CREATED,
+            data: {id: gameEngine.id, players: Object.fromEntries(gameEngine.game.players)}
+        });
+    } else if (gameEngine.game.type !== GameType.FRIENDLY && !pendingGames.has(gameEngine.id))
+        pendingGames.set(gameEngine.id, gameEngine);
+
+    return isReady;
+}
+
 /**
  * Allows a player to join a friendly game, either by joining an existing one or creating a new one.
  *
@@ -246,6 +246,12 @@ io.on('connection', (gatewaySocket) => {
         gatewaySocket.rooms.forEach((room) => {
             const playerIds = socketToUser.get(gatewaySocket.id);
             const game = activeGames.get(room);
+
+            const pendingGame = pendingGames.get(room);
+            if (pendingGame?.game.players.size === 1) {
+                pendingGames.delete(room);
+                return;
+            }
 
             if (!game || !playerIds)
                 return;
