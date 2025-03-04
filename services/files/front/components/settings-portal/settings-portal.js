@@ -91,7 +91,7 @@ export class SettingsPortal extends Component {
         }
         if (event.type === "colorModificationAsked") {
             const index = event.detail.componentID.match(/\d+$/) - 1;
-            if (event.color === this.settings.playersColors[(index + 1) % 2]) {
+            if (event.detail.color === this.settings.playersColors[(index + 1) % 2]) {
                 this.shadowRoot.getElementById("alreadyTakenColor").style.display = "flex";
                 this.shadowRoot.getElementById(`color${index + 1}`).color = this.settings.playersColors[index];
             } else {

@@ -57,7 +57,7 @@ export class PlayerKeys extends Component {
                         text.setAttribute("id", keyIndex);
 
                         gElement.appendChild(text);
-                        gElement.addEventListener("click", this.modifyKey.bind(this, keyIndex));
+                        this.addAutoCleanListener(gElement, "click", this.modifyKey.bind(this, keyIndex));
 
                         keyIndex++;
                     }

@@ -17,10 +17,11 @@ export class PlayerColor extends Component {
     async connectedCallback() {
         await super.connectedCallback();
         this.shadowRoot.getElementById("colorPicker").value = this._color;
-        this.shadowRoot.getElementById("colorPicker").addEventListener("change", this.modifyColor.bind(this), false);
+        this.addAutoCleanListener(this.shadowRoot.getElementById("colorPicker"), "change", this.modifyColor.bind(this));
     }
 
     modifyColor(event) {
+        this._color = event.target.value;
         this.dispatchEvent(new CustomEvent("colorModificationAsked", {
             detail: {componentID: this.id, color: event.target.value},
             bubbles: true,
