@@ -16,6 +16,7 @@ export class PlayerColor extends Component {
 
     async connectedCallback() {
         await super.connectedCallback();
+        this.shadowRoot.querySelector("label").textContent += " " + this.getAttribute("id").match(/\d+$/);
         this.shadowRoot.getElementById("colorPicker").value = this._color;
         this.addAutoCleanListener(this.shadowRoot.getElementById("colorPicker"), "change", this.modifyColor.bind(this));
     }
