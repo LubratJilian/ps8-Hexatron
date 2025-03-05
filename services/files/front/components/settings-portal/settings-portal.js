@@ -3,6 +3,12 @@ import {PlayerKeys} from "../player-keys/player-keys.js";
 import {PlayerColor} from "../player-color/player-color.js";
 import {Component} from "../component/component.js";
 
+const MESSAGE = Object.freeze({
+    KEY_ALREADY_ASSIGNED: {message: "The key is already assigned", type: "error"},
+    COLOR_ALREADY_ASSIGNED: {message: "The color is already assigned", type: "red"},
+    CHOOSE_NEW_KEY: {message: "Choose a new key by pressing it", type: "info"}
+});
+
 export class SettingsPortal extends Component {
     constructor() {
         super();
@@ -40,17 +46,20 @@ export class SettingsPortal extends Component {
 
         this.addAutoCleanListener(this.shadowRoot.querySelector("#validate"), "click", async () => await this.validate());
         this.addAutoCleanListener(this.shadowRoot.querySelector("#cancel"), "click", () => this.cancel());
+
+        this.shadowRoot.getElementById("colorMessage").style.visibility = "hidden";
+        this.shadowRoot.getElementById("keyMessage").style.visibility = "hidden";
     }
 
     keyListener(event) {
         const index = this.currentEventDetail.componentID.match(/\d+$/) - 1;
-        this.shadowRoot.getElementById("newKey").style.display = "none";
+        this.shadowRoot.getElementById("keyMessage").style.visibility = "hidden";
         if (this.settings.keysPlayers[index][this.currentEventDetail.index] === event.key.toUpperCase()) {
             this.shadowRoot.getElementById(this.currentEventDetail.componentID).resetKey(this.currentEventDetail.index);
             this.currentEventDetail = null;
             return;
         } else if (this.settings.keysPlayers.some(row => row.includes(event.key.toUpperCase()))) {
-            this.shadowRoot.getElementById("alreadyTakenKey").style.display = "flex";
+            this.activeMessage("keyMessage", MESSAGE.KEY_ALREADY_ASSIGNED);
             this.shadowRoot.getElementById(this.currentEventDetail.componentID).resetKey(this.currentEventDetail.index);
         } else {
             this.shadowRoot.getElementById(this.currentEventDetail.componentID).newKey(this.currentEventDetail.index, event.key.toUpperCase());
@@ -63,8 +72,8 @@ export class SettingsPortal extends Component {
     cancelModification(event) {
         event.stopImmediatePropagation();
         if (this.currentEventDetail && event.composedPath()[0] && event.composedPath()[0].nodeName !== "polygon") {
-            this.shadowRoot.getElementById("newKey").style.display = "none";
-            this.shadowRoot.getElementById("alreadyTakenKey").style.display = "none";
+            this.shadowRoot.getElementById("keyMessage").style.visibility = "hidden";
+            console.log(this.shadowRoot.getElementById("keyMessage").style.visibility);
             this.shadowRoot.getElementById(this.currentEventDetail.componentID).resetKey(this.currentEventDetail.index);
             document.removeEventListener("keydown", this.boundKeyListener);
             this.currentEventDetail = null;
@@ -75,14 +84,13 @@ export class SettingsPortal extends Component {
         event.preventDefault();
         event.stopImmediatePropagation();
         if (event.type === "keyModificationAsked") {
-            this.shadowRoot.getElementById("alreadyTakenKey").style.display = "none";
-            this.shadowRoot.getElementById("newKey").style.display = "flex";
+            this.activeMessage("keyMessage", MESSAGE.CHOOSE_NEW_KEY);
             if (this.currentEventDetail) {
                 this.shadowRoot.getElementById(this.currentEventDetail.componentID).resetKey(this.currentEventDetail.index);
                 document.removeEventListener("keydown", this.boundKeyListener);
                 if (Object.entries(event.detail).every(([key, value]) => this.currentEventDetail[key] === value)) {
                     this.currentEventDetail = null;
-                    this.shadowRoot.getElementById("newKey").style.display = "none";
+                    this.shadowRoot.getElementById("keyMessage").style.visibility = "hidden";
                     return;
                 }
             }
@@ -92,10 +100,9 @@ export class SettingsPortal extends Component {
         if (event.type === "colorModificationAsked") {
             const index = event.detail.componentID.match(/\d+$/) - 1;
             if (event.detail.color === this.settings.playersColors[(index + 1) % 2]) {
-                this.shadowRoot.getElementById("alreadyTakenColor").style.display = "flex";
+                this.activeMessage("colorMessage", MESSAGE.COLOR_ALREADY_ASSIGNED);
                 this.shadowRoot.getElementById(`color${index + 1}`).color = this.settings.playersColors[index];
             } else {
-                this.shadowRoot.getElementById("alreadyTakenColor").style.display = "none";
                 this.settings.playersColors[index] = event.detail.color;
                 this.shadowRoot.getElementById("validationPart").style.display = "flex";
             }
@@ -129,5 +136,11 @@ export class SettingsPortal extends Component {
             (color, index) => {
                 this.shadowRoot.getElementById(`color${index + 1}`).color = color;
             });
+    }
+
+    activeMessage(id, information) {
+        this.shadowRoot.getElementById(id).textContent = information.message;
+        this.shadowRoot.getElementById(id).setAttribute("type", information.type);
+        this.shadowRoot.getElementById(id).style.visibility = "visible";
     }
 }
