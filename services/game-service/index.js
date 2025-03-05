@@ -11,7 +11,8 @@ const ErrorTypes = Object.freeze({
     PLAYER_NOT_FOUND: 'PLAYER_NOT_FOUND',
     INVALID_INPUT: 'INVALID_INPUT',
     GAME_CREATION_FAILED: 'GAME_CREATION_FAILED',
-    ALREADY_IN_GAME: 'ALREADY_IN_GAME'
+    ALREADY_IN_GAME: 'ALREADY_IN_GAME',
+    GAME_ERROR: 'GAME_ERROR'
 });
 
 const server = http.createServer(function (request, response) {
@@ -31,8 +32,15 @@ const io = new Server(server, {
 const activeGames = new Map(); // { gameEngineId => gameEngine }
 const socketToUser = new Map(); // socketId -> userId
 const friendlyGames = new Map(); // playerId -> gameEngine
-const pendingGames = [];
+const pendingGames = new Map(); // gameEngineId -> gameEngine
 
+/**
+ * Handle a game event
+ *
+ * @param {string} gameId - The game id
+ * @param {string} eventName - The event name
+ * @param {any} eventData - The event data
+ */
 function handleEvent(gameId, eventName, eventData) {
     if (!activeGames.has(gameId))
         return;
@@ -43,6 +51,13 @@ function handleEvent(gameId, eventName, eventData) {
         activeGames.delete(gameId);
 }
 
+/**
+ * Sends an error message to a specific socket.
+ *
+ * @param {Socket} socket - The socket to which the error should be sent.
+ * @param {string} errorType - The type of error.
+ * @param {string} message - A descriptive error message.
+ */
 function sendError(socket, errorType, message) {
     socket.emit("error", {
         type: errorType,
@@ -50,27 +65,16 @@ function sendError(socket, errorType, message) {
     });
 }
 
-function startGameIfReady(game, gameIndex, isNewGame) {
-    const isReady = game.game.players.size === game.playersCount || game.game.type === GameType.AI;
-
-    if (isReady) {
-        if (gameIndex !== -1)
-            pendingGames.splice(gameIndex, 1);
-
-        game.start().then();
-        activeGames.set(game.id, game);
-        io.to(game.id).emit("refreshStatus", {
-            status: CREATED,
-            data: {id: game.id, players: Object.fromEntries(game.game.players)}
-        });
-    } else if (isNewGame)
-        pendingGames.push(game);
-
-    return isReady;
-}
-
-function validateJoin(users, gameType, socket) {
-    if (!Array.isArray(users) || users.length === 0 || !gameType == null) {
+/**
+ * Validates whether a player can join a game.
+ *
+ * @param {Array} players - An array of player objects attempting to join the game.
+ * @param {string} gameType - The type of game to join (e.g., "FRIENDLY", "COMPETITIVE").
+ * @param {Socket} socket - The socket instance of the player attempting to join.
+ * @throws {Object} Throws an error if the input data is invalid or if the player is already in a game.
+ */
+function validateJoin(players, gameType, socket) {
+    if (!Array.isArray(players) || players.length === 0 || gameType == null) {
         throw {
             type: ErrorTypes.INVALID_INPUT,
             message: "Invalid data"
@@ -88,6 +92,13 @@ function validateJoin(users, gameType, socket) {
     }
 }
 
+/**
+ * Creates a new game instance with the specified players and game type.
+ *
+ * @param {Array} players - An array of player objects participating in the game.
+ * @param {string} gameType - The type of game to be created.
+ * @returns {GameEngine} A new instance of the GameEngine managing the game.
+ */
 function createNewGame(players, gameType) {
     return new GameEngine(
         players,
@@ -100,6 +111,44 @@ function createNewGame(players, gameType) {
     );
 }
 
+/**
+ * Starts the game if all required players have joined.
+ *
+ * @param {GameEngine} gameEngine - The game engine instance managing the game.
+ * @returns {boolean} True if the game is ready and has started, false otherwise.
+ */
+function startGameIfReady(gameEngine) {
+    const isReady = gameEngine.game.players.size === gameEngine.playersCount || gameEngine.game.type === GameType.AI;
+
+    if (isReady) {
+        if (pendingGames.has(gameEngine.id))
+            pendingGames.delete(gameEngine.id);
+
+        gameEngine.start().then().catch(({type, _}) => {
+            io.to(gameEngine.id).emit("error", {
+                type: type || ErrorTypes.GAME_ERROR,
+                message: "An error has been encountered during the game.",
+            });
+        });
+
+        activeGames.set(gameEngine.id, gameEngine);
+        io.to(gameEngine.id).emit("refreshStatus", {
+            status: CREATED,
+            data: {id: gameEngine.id, players: Object.fromEntries(gameEngine.game.players)}
+        });
+    } else if (gameEngine.game.type !== GameType.FRIENDLY && !pendingGames.has(gameEngine.id))
+        pendingGames.set(gameEngine.id, gameEngine);
+
+    return isReady;
+}
+
+/**
+ * Allows a player to join a friendly game, either by joining an existing one or creating a new one.
+ *
+ * @param {RemotePlayer} player - The player attempting to join the game.
+ * @param {string} expectedPlayerId - The ID of the expected opponent.
+ * @param {Socket} socket - The socket instance of the player.
+ */
 function joinFriendlyGame(player, expectedPlayerId, socket) {
     let game;
 
@@ -116,7 +165,7 @@ function joinFriendlyGame(player, expectedPlayerId, socket) {
         friendlyGames.set(expectedPlayerId, game);
     }
 
-    if (startGameIfReady(game, -1, false))
+    if (startGameIfReady(game))
         friendlyGames.delete(expectedPlayerId);
 }
 
@@ -143,23 +192,17 @@ io.on('connection', (gatewaySocket) => {
                 return;
             }
 
-            const gameIndex = pendingGames.findIndex(gameEngine =>
+            let game = Array.from(pendingGames.values()).find(gameEngine =>
                 gameEngine.game.type === gameType &&
                 gameEngine.game.players.size + remotePlayers.length <= gameEngine.playersCount
             );
 
-            let game;
-            let isNewGame = false;
-            if (gameIndex !== -1) {
-                game = pendingGames[gameIndex];
+            if (game)
                 remotePlayers.forEach(player => game.addPlayer(player));
-            } else {
-                game = createNewGame(remotePlayers, gameType);
-                isNewGame = true;
-            }
+            else game = createNewGame(remotePlayers, gameType);
 
             gatewaySocket.join(game.id);
-            startGameIfReady(game, gameIndex, isNewGame);
+            startGameIfReady(game);
         } catch ({type, message}) {
             sendError(
                 gatewaySocket,
@@ -197,6 +240,12 @@ io.on('connection', (gatewaySocket) => {
         gatewaySocket.rooms.forEach((room) => {
             const playerIds = socketToUser.get(gatewaySocket.id);
             const game = activeGames.get(room);
+
+            const pendingGame = pendingGames.get(room);
+            if (pendingGame?.game.players.size === 1) {
+                pendingGames.delete(room);
+                return;
+            }
 
             if (!game || !playerIds)
                 return;
