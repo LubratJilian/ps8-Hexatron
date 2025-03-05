@@ -28,12 +28,11 @@ export class PlayerKeys extends Component {
     }
 
     generateGrid() {
-        //TODO Find the good size for the text and do it responsive
         let grid = this.shadowRoot.querySelector("#grid>g");
         let size = 50;
         let verticalSpacing = (3 / 2) * size;
         let horizontalSpacing = (Math.sqrt(3) / 2) * size;
-        const v = (1 / 2) * size;
+        const sizeOverTwo = (1 / 2) * size;
         let keyIndex = 0;
         for (let i = -1; i <= 1; i++) {
             let range = 2 - Math.abs(i);
@@ -44,13 +43,12 @@ export class PlayerKeys extends Component {
                     gElement.setAttribute("transform", `translate(${j * horizontalSpacing}, ${i * verticalSpacing})`);
 
                     const hex = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-                    hex.setAttribute("points", `0,${size} ${horizontalSpacing},${v} ${horizontalSpacing},${-v} 0,${-size} ${-horizontalSpacing},${-v} ${-horizontalSpacing},${v}`);
-                    if (i % 2 !== 0) {
-                        hex.setAttribute("class", "editable");
-                    }
+                    hex.setAttribute("points", `0,${size} ${horizontalSpacing},${sizeOverTwo} ${horizontalSpacing},${-sizeOverTwo} 0,${-size} ${-horizontalSpacing},${-sizeOverTwo} ${-horizontalSpacing},${sizeOverTwo}`);
                     gElement.appendChild(hex);
 
                     if (i % 2 !== 0) {
+                        hex.setAttribute("class", "editable");
+
                         const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                         text.textContent = this._data[keyIndex];
                         text.setAttribute("font-size", `${convertRemToPixels(0.3)}rem`);
