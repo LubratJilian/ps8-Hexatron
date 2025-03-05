@@ -5,10 +5,15 @@ export class PlayerKeys extends Component {
     constructor() {
         super();
         this._data = [];
+        this._color = "";
     }
 
     set data(data) {
         this._data = data;
+    }
+
+    set color(color) {
+        this._color = color;
     }
 
     async connectedCallback() {
@@ -46,6 +51,11 @@ export class PlayerKeys extends Component {
                     hex.setAttribute("points", `0,${size} ${horizontalSpacing},${sizeOverTwo} ${horizontalSpacing},${-sizeOverTwo} 0,${-size} ${-horizontalSpacing},${-sizeOverTwo} ${-horizontalSpacing},${sizeOverTwo}`);
                     gElement.appendChild(hex);
 
+                    if (i === 0 && j === -2) {
+                        hex.setAttribute("id", "colored");
+                        hex.setAttribute("fill", this._color);
+                    }
+
                     if (i % 2 !== 0) {
                         hex.setAttribute("class", "editable");
 
@@ -59,10 +69,29 @@ export class PlayerKeys extends Component {
 
                         keyIndex++;
                     }
+
+                    if (i === 0 && j === 0) {
+                        const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+                        image.setAttributeNS("http://www.w3.org/1999/xlink", "href", "../assets/space-ship.svg");
+
+                        image.setAttribute("x", "-25");
+                        image.setAttribute("y", "-25");
+                        image.setAttribute("width", "50");
+                        image.setAttribute("height", "50");
+                        image.setAttribute("transform", "rotate(90, 0, 0)");
+
+                        gElement.appendChild(image);
+                    }
+
                     grid.appendChild(gElement);
                 }
             }
         }
+    }
+
+    changeColor(color) {
+        this._color = color;
+        this.shadowRoot.getElementById("colored").setAttribute("fill", color);
     }
 
     resetKey(index) {

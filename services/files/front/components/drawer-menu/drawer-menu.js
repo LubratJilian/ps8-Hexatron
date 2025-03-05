@@ -45,7 +45,6 @@ export class DrawerMenu extends Component {
         );
 
         this.addAutoCleanListener(document, "click", (event) => {
-            console.log(event.composedPath(), event.composedPath().some(element => element === "drawer-menu" || element === "custom-nav"), this._oppened);
             if (!(event.composedPath().some(element => element.localName === "drawer-menu" || element.localName === "custom-nav")) && this._oppened) {
                 this.nav(this.previous);
             }

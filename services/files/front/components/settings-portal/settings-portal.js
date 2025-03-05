@@ -7,7 +7,7 @@ const MESSAGE = Object.freeze({
     KEY_ALREADY_ASSIGNED: {message: "The key is already assigned", type: "error"},
     COLOR_ALREADY_ASSIGNED: {message: "The color is already assigned", type: "red"},
     CHOOSE_NEW_KEY: {message: "Choose a new key by pressing it", type: "info"}
-});
+})
 
 export class SettingsPortal extends Component {
     constructor() {
@@ -34,6 +34,7 @@ export class SettingsPortal extends Component {
             const playerKeys = document.createElement("player-keys");
             playerKeys.setAttribute("id", `player${i + 1}`);
             playerKeys.data = value;
+            playerKeys.color = this.settings.playersColors[i];
             this.shadowRoot.getElementById("keys").appendChild(playerKeys);
         });
 
@@ -73,7 +74,6 @@ export class SettingsPortal extends Component {
         event.stopImmediatePropagation();
         if (this.currentEventDetail && event.composedPath()[0] && event.composedPath()[0].nodeName !== "polygon") {
             this.shadowRoot.getElementById("keyMessage").style.visibility = "hidden";
-            console.log(this.shadowRoot.getElementById("keyMessage").style.visibility);
             this.shadowRoot.getElementById(this.currentEventDetail.componentID).resetKey(this.currentEventDetail.index);
             document.removeEventListener("keydown", this.boundKeyListener);
             this.currentEventDetail = null;
@@ -104,6 +104,7 @@ export class SettingsPortal extends Component {
                 this.shadowRoot.getElementById(`color${index + 1}`).color = this.settings.playersColors[index];
             } else {
                 this.settings.playersColors[index] = event.detail.color;
+                this.shadowRoot.getElementById(`player${index + 1}`).changeColor(event.detail.color);
                 this.shadowRoot.getElementById("validationPart").style.display = "flex";
             }
         }
@@ -135,6 +136,7 @@ export class SettingsPortal extends Component {
         this.settings.playersColors.forEach(
             (color, index) => {
                 this.shadowRoot.getElementById(`color${index + 1}`).color = color;
+                this.shadowRoot.getElementById(`player${index + 1}`).changeColor(color);
             });
     }
 
