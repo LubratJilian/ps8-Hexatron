@@ -16,3 +16,15 @@
     z-index: 1;
     pointer-events: none;
 }
+
+#game-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 80%;
+}
+
+result-screen {
+    display: none;
+}

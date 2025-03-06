@@ -8,7 +8,7 @@ export const GameStatus = {
     CREATED: 'CREATED',
     POSITIONS_UPDATED: 'POSITION_UPDATED',
     ROUND_END: 'ROUND_END',
-    GAME_END: 'GAME_END',
+    GAME_END: 'GAME_END'
 };
 
 export class GameService extends EventEmitter {
@@ -146,8 +146,9 @@ export class GameService extends EventEmitter {
     }
 
     errorListener() {
-        this.socket.on("error", ({type, message}) => {
-            console.error(`${type} -> ${message}`);
+        this.socket.on("error", () => {
+            alert("An error has occurred please try again");
+            window.location.href = "/";
         });
     }
 
@@ -155,6 +156,8 @@ export class GameService extends EventEmitter {
         this._game = null;
         this._context = null;
         this._shouldInvertPositions = false;
+
+        this.emit(GameStatus.GAME_END);
     }
 
     startGame(gameType) {
