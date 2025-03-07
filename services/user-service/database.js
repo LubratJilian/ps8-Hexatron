@@ -84,10 +84,10 @@ async function deleteToken(userID) {
 }
 
 async function addUser(newUser) {
+    newUser["elo"] = parseInt(process.env.INITIAL_ELO);
     const result = await mongoOperation(() =>
         db.collection(userCollection).insertOne(newUser)
     );
-
     const userId = convertToString(result.insertedId);
     try {
         const user = await getUserByID(userId, [USER_FIELDS.password, USER_FIELDS.answers]);

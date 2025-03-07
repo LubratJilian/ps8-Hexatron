@@ -49,6 +49,7 @@ services:
       - DB_NAME=${DB_NAME}
       - UTILS_API=${UTILS_API}
       - USER_API=${USER_API}
+      - INITIAL_ELO=${INITIAL_ELO}
     expose:
       - "8003"
     depends_on:

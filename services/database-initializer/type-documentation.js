@@ -43,6 +43,9 @@ const User = {
             minLength: 1,
             maxLength: 50
         }
+    },
+    elo: {
+        bsonType: "int"
     }
 };
 

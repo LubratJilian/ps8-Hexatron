@@ -4,7 +4,8 @@ const userExample = {
     name: "Champion39",
     parameters: "parameters",
     password: "password1234",
-    answers: ["Lacroix", "Rennes", "Mars attack"]
+    answers: ["Lacroix", "Rennes", "Mars attack"],
+    elo: process.env.INITIAL_ELO
 };
 
 const accessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2N2FhNDc4M2MwZGMwYTM3YTUxM2MwYjciLCJpYXQiOjE3MzkyMTMzMzYsImV4cCI6MTczOTIxNDIzNn0.2iIKH4d9dSnS7p9-8148MEHIBvgxTdTpl8JhJGHZYm0";
@@ -22,7 +23,7 @@ const extractProperties = (obj, properties) => {
 function createResponseExample(message, fields = ["message", "user", "accessToken", "refreshToken"]) {
     let value = extractProperties({
         message: message,
-        user: extractProperties(userExample, ["name", "parameters"]),
+        user: extractProperties(userExample, ["name", "parameters", "elo"]),
         accessToken: accessToken,
         refreshToken: refreshToken
     }, fields);
@@ -58,7 +59,7 @@ exports.options = {
                 user: {
                     type: "object",
                     properties: userJson,
-                    example: userExample
+                    example: extractProperties(userExample, ["name", "parameters", "password", "answers"])
                 },
                 returned_user: {
                     type: "object",
@@ -88,7 +89,7 @@ exports.options = {
                         },
                         user: {
                             type: "object",
-                            properties: extractProperties(userJson, ["name", "parameters"])
+                            properties: extractProperties(userJson, ["name", "parameters", "elo"])
                         },
                         accessToken: {
                             type: "string"
