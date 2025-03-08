@@ -5,6 +5,10 @@
 - Antoine-Marie Michelozzi
 - Jilian Lubrat
 
+## Access
+
+The project is deployed on an AWS server. You can access it at http://hexatron.pns.academy/.
+
 ## Run
 
 To run the project, you need to have Docker and Docker Compose installed.
