@@ -21,4 +21,4 @@ jobs:
           git pull origin main
           cd ./services
           docker-compose down
-          docker-compose --env-file Variables.env up -d --build
+          docker-compose --env-file variables.env up -d --build

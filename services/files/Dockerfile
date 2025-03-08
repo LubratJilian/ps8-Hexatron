@@ -7,7 +7,7 @@ RUN npm install
 
 ################################################
 
-FROM base as dev
+FROM base AS dev
 
 COPY ./index.js /app/index.js
 COPY ./logic.js ./logic.js
@@ -17,7 +17,7 @@ CMD ["npm", "start"]
 
 ################################################
 
-FROM base as prod
+FROM base AS prod
 
 COPY ./index.js /app/index.js
 COPY ./front ./front
