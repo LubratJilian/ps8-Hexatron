@@ -84,8 +84,7 @@ exports.login = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const userID = getIDInRequest(req);
-        const userData = req.body;
-        await updateUser(userData, userID);
+        const userData = await updateUser(req.body, userID);
         res.writeHead(200, {"Content-Type": "application/json"});
         res.end(JSON.stringify({message: "User successfully updated.", user: userData}));
     } catch (error) {

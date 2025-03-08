@@ -51,8 +51,8 @@ export class Component extends HTMLElement {
         `;
     }
 
-    addAutoCleanListener(target, event, handler) {
-        target.addEventListener(event, handler);
+    addAutoCleanListener(target, event, handler, once = false) {
+        target.addEventListener(event, handler, {once: once});
         this._listeners.add({target, event, handler});
     }
 

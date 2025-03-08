@@ -70,7 +70,7 @@ export class UserProfile extends BaseAuth {
     }
 
     updateUserData() {
-        if (!UserService.getInstance().user)
+        if (!UserService.getInstance().isConnected())
             return;
 
         if (this._elements.PROFILE_PICTURE && UserService.getInstance().user.profilePicturePath) {
@@ -92,7 +92,7 @@ export class UserProfile extends BaseAuth {
         } else {
             if (this.checkInputs(UserProfile.SELECTORS.USERNAME_DIV)) {
                 const newUsername = this._elements.USERNAME_INPUT.shadowRoot.querySelector("input").value;
-                const data = await UserService.getInstance().updateUsername(newUsername);
+                const data = await UserService.getInstance().updateUser({name: newUsername});
                 this._handleUsernameChange(data);
             }
         }

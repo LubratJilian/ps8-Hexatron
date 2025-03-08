@@ -44,7 +44,7 @@ export class HomeButton extends Component {
                 this.style.alignItems = "center";
                 this.style.margin = "0 0 0 20px";
             } else {
-                this.style.position = "absolute";
+                this.style.position = "fixed";
                 this.style.top = 0;
                 this.style.left = 0;
                 this.style.margin = "20px 0 0 20px";

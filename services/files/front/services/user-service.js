@@ -17,7 +17,7 @@ export const USER_ACTIONS = Object.freeze({
 });
 
 const DEFAULT_PARAMS = {
-    keysPlayers: [["a", "q", "e", "d"], ["u", "j", "o", "l"]],
+    keysPlayers: [["A", "Q", "E", "D"], ["U", "J", "O", "L"]],
     playersColors: ["#ff0000", "#40ff00"]
 };
 
@@ -64,17 +64,21 @@ export class UserService extends EventEmitter {
 
         if (UserService._instance) return UserService._instance;
 
-        this._guest = new User("local-user", "Guest", "", DEFAULT_PARAMS);
-        this._user = JSON.parse(localStorage.getItem("user")) || null;
+        this._user = JSON.parse(localStorage.getItem("user")) || new User("0", "Player 1", "assets/profile.svg", DEFAULT_PARAMS);
         this._accessToken = localStorage.getItem("accessToken") || null;
         this._refreshToken = localStorage.getItem("refreshToken") || null;
+        this._connected = localStorage.getItem("connected") || false;
+
+        if (!this._connected) {
+            localStorage.setItem("user", JSON.stringify(this._user));
+        }
 
         this._eventEmitter = new EventEmitter();
         UserService._instance = this;
     }
 
     get user() {
-        return this._user || this._guest;
+        return this._user;
     }
 
     static getInstance() {
@@ -85,7 +89,7 @@ export class UserService extends EventEmitter {
     }
 
     isConnected() {
-        return this._user !== null;
+        return this._connected;
     }
 
     _getErrorMessage(status, action) {
@@ -93,7 +97,8 @@ export class UserService extends EventEmitter {
     }
 
     async register(data) {
-        data["parameters"] = DEFAULT_PARAMS;
+        console.log(this.user.parameters, data);
+        data.parameters = this._user.parameters;
         return this._authenticate("api/user/register", data, USER_ACTIONS.REGISTER);
     }
 
@@ -105,6 +110,7 @@ export class UserService extends EventEmitter {
         this._user = data.user;
         this._accessToken = data.accessToken;
         this._refreshToken = data.refreshToken;
+        this._connected = true;
         this._saveToLocalStorage();
         this.emit(USER_EVENTS.CONNECTION);
     }
@@ -118,15 +124,21 @@ export class UserService extends EventEmitter {
         return {success: false, error: this._getErrorMessage(response.status, action)};
     }
 
-    async updateUsername(newUsername) {
-        const response = await this._request("PATCH", `api/user/me`, {name: newUsername});
-        if (response.success) {
-            const data = response.data;
-            this.user.name = data.user.name;
+    async updateUser(newData) {
+        if (this.isConnected()) {
+            const response = await this._request("PATCH", `api/user/me`, newData);
+            if (response.success) {
+                const data = response.data;
+                console.log(data.user);
+                this._user = data.user;
+                localStorage.setItem("user", JSON.stringify(this._user));
+                return {success: true, newData: newData};
+            }
+            return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)};
+        } else {
+            Object.entries(newData).forEach(([key, value]) => this._user[key] = value);
             localStorage.setItem("user", JSON.stringify(this._user));
-            return {success: true, username: data.user.name};
         }
-        return {success: false, error: this._getErrorMessage(response.status, USER_ACTIONS.UPDATE_USERNAME)};
     }
 
     async updatePassword(curPassword, newPassword) {
@@ -208,12 +220,14 @@ export class UserService extends EventEmitter {
         localStorage.setItem("user", JSON.stringify(this._user));
         localStorage.setItem("accessToken", this._accessToken);
         localStorage.setItem("refreshToken", this._refreshToken);
+        localStorage.setItem("connected", this._connected);
     }
 
     _clearLocalStorage() {
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+        localStorage.removeItem("connected");
     }
 
     _reset() {
