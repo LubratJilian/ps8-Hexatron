@@ -1,0 +1,71 @@
+:host {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: fadeIn 0.5s ease-out forwards;
+    height: 90%;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: #333333;
+}
+
+#settings {
+    display: flex;
+    flex-direction: column;
+    margin-top: 25px;
+    width: 70%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+#keys, #colors {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: row;
+}
+
+#validationPart {
+    display: none;
+    flex-direction: row;
+    justify-content: space-around;
+    margin-top: 20px
+}
+
+p {
+    visibility: hidden;
+    text-align: center;
+}
+
+p[type="error"] {
+    color: red;
+}
+
+p[type="info"] {
+    color: #646464;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+* {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
